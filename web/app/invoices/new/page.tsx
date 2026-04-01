@@ -65,19 +65,34 @@ function DetailBadge({ label, value }: { label: string; value: string }) {
 
 function EntityDetails({
   icon: Icon,
-  name,
-  gstin,
+  entity,
 }: {
   icon: React.ElementType
-  name: string
-  gstin: string
+  entity: CompanyResponse | ClientResponse
 }) {
+  const rows = [
+    { label: "GSTIN",    value: entity.gstin },
+    { label: "PAN",      value: (entity as CompanyResponse).pan },
+    { label: "Email",    value: entity.emailPrimary },
+    { label: "Email 2",  value: entity.emailSecondary },
+    { label: "Phone",    value: entity.phonePrimary },
+    { label: "Phone 2",  value: entity.phoneSecondary },
+    { label: "Landline", value: entity.phoneLandline },
+    { label: "Website",  value: (entity as CompanyResponse).website },
+    { label: "Address",  value: entity.address },
+    { label: "State",    value: entity.state },
+  ].filter((r) => r.value)
+
   return (
-    <div className="mt-2 flex items-start gap-2 rounded-md border border-border/60 bg-muted/30 px-3 py-2">
-      <Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-      <div className="flex flex-col gap-0.5">
-        <span className="text-sm font-medium">{name}</span>
-        {gstin && <DetailBadge label="GSTIN" value={gstin} />}
+    <div className="mt-2 rounded-md border border-border/60 bg-muted/30 px-3 py-2.5">
+      <div className="mb-2 flex items-center gap-2">
+        <Icon className="size-4 shrink-0 text-muted-foreground" />
+        <span className="text-sm font-medium">{entity.name}</span>
+      </div>
+      <div className="flex flex-col gap-1">
+        {rows.map((r) => (
+          <DetailBadge key={r.label} label={r.label} value={r.value} />
+        ))}
       </div>
     </div>
   )
@@ -125,10 +140,13 @@ export default function CreateInvoicePage() {
   }, [selectedCompany, fy])
 
   return (
-    <div className="mx-auto max-w-xl px-4 py-8">
+    <div className="mx-auto max-w-5xl px-4 py-8">
       <h1 className="mb-8 text-2xl font-semibold tracking-tight">Create Invoice</h1>
 
-      <div className="flex flex-col gap-6">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+
+        {/* ── Grid 1: Company + Client ── */}
+        <div className="flex flex-col gap-6">
 
         {/* ── Company ── */}
         <div>
@@ -174,8 +192,7 @@ export default function CreateInvoicePage() {
               {selectedCompany && (
                 <EntityDetails
                   icon={BuildingIcon}
-                  name={selectedCompany.name}
-                  gstin={selectedCompany.gstin}
+                  entity={selectedCompany}
                 />
               )}
             </>
@@ -226,13 +243,17 @@ export default function CreateInvoicePage() {
               {selectedClient && (
                 <EntityDetails
                   icon={UserIcon}
-                  name={selectedClient.name}
-                  gstin={selectedClient.gstin}
+                  entity={selectedClient}
                 />
               )}
             </>
           )}
         </div>
+
+        </div>{/* ── end Grid 1 ── */}
+
+        {/* ── Grid 2: Invoice Number + Date ── */}
+        <div className="flex flex-col gap-6">
 
         {/* ── Invoice Number ── */}
         <div>
@@ -281,6 +302,8 @@ export default function CreateInvoicePage() {
             )}
           </div>
         </div>
+
+        </div>{/* ── end Grid 2 ── */}
 
       </div>
     </div>
