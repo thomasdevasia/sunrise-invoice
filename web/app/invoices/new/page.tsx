@@ -2,7 +2,13 @@
 
 import * as React from "react"
 import { useQuery } from "@tanstack/react-query"
-import { BuildingIcon, UserIcon, CalendarIcon } from "lucide-react"
+import {
+  BuildingIcon,
+  UserIcon,
+  CalendarIcon,
+  PlusIcon,
+  Trash2Icon,
+} from "lucide-react"
 
 import { getCompaniesAction, type CompanyResponse } from "@/app/company/actions"
 import { getClientsAction, type ClientResponse } from "@/app/clients/actions"
@@ -40,7 +46,11 @@ function getInitials(name: string): string {
     .toUpperCase()
 }
 
-function buildInvoiceNumber(count: number, companyName: string, fy: string): string {
+function buildInvoiceNumber(
+  count: number,
+  companyName: string,
+  fy: string
+): string {
   const paddedCount = String(count).padStart(3, "0")
   const initials = getInitials(companyName)
   return `${paddedCount}/${initials}/${fy}`
@@ -71,16 +81,16 @@ function EntityDetails({
   entity: CompanyResponse | ClientResponse
 }) {
   const rows = [
-    { label: "GSTIN",    value: entity.gstin },
-    { label: "PAN",      value: (entity as CompanyResponse).pan },
-    { label: "Email",    value: entity.emailPrimary },
-    { label: "Email 2",  value: entity.emailSecondary },
-    { label: "Phone",    value: entity.phonePrimary },
-    { label: "Phone 2",  value: entity.phoneSecondary },
+    { label: "GSTIN", value: entity.gstin },
+    { label: "PAN", value: (entity as CompanyResponse).pan },
+    { label: "Email", value: entity.emailPrimary },
+    { label: "Email 2", value: entity.emailSecondary },
+    { label: "Phone", value: entity.phonePrimary },
+    { label: "Phone 2", value: entity.phoneSecondary },
     { label: "Landline", value: entity.phoneLandline },
-    { label: "Website",  value: (entity as CompanyResponse).website },
-    { label: "Address",  value: entity.address },
-    { label: "State",    value: entity.state },
+    { label: "Website", value: (entity as CompanyResponse).website },
+    { label: "Address", value: entity.address },
+    { label: "State", value: entity.state },
   ].filter((r) => r.value)
 
   return (
@@ -113,11 +123,57 @@ export default function CreateInvoicePage() {
     queryFn: () => getClientsAction(),
   })
 
-  const [selectedCompanyId, setSelectedCompanyId] = React.useState<string | null>(null)
-  const [selectedClientId, setSelectedClientId] = React.useState<string | null>(null)
+  const [selectedCompanyId, setSelectedCompanyId] = React.useState<
+    string | null
+  >(null)
+  const [selectedClientId, setSelectedClientId] = React.useState<string | null>(
+    null
+  )
   const [invoiceNumber, setInvoiceNumber] = React.useState("")
   const [invoiceDate, setInvoiceDate] = React.useState<Date>(new Date())
   const [calendarOpen, setCalendarOpen] = React.useState(false)
+
+  type LineItem = {
+    id: string
+    description: string
+    quantity: string
+    rate: string
+  }
+  const [lineItems, setLineItems] = React.useState<LineItem[]>([
+    { id: crypto.randomUUID(), description: "", quantity: "", rate: "" },
+  ])
+
+  function addRow() {
+    setLineItems((prev) => [
+      ...prev,
+      { id: crypto.randomUUID(), description: "", quantity: "", rate: "" },
+    ])
+  }
+
+  function removeRow(id: string) {
+    setLineItems((prev) => prev.filter((r) => r.id !== id))
+  }
+
+  function updateRow(
+    id: string,
+    field: keyof Omit<LineItem, "id">,
+    value: string
+  ) {
+    setLineItems((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, [field]: value } : r))
+    )
+  }
+
+  const subtotal = lineItems.reduce((sum, r) => {
+    return sum + (parseFloat(r.quantity) || 0) * (parseFloat(r.rate) || 0)
+  }, 0)
+
+  const [cgstPct, setCgstPct] = React.useState("")
+  const [sgstPct, setSgstPct] = React.useState("")
+
+  const cgstAmt = subtotal * ((parseFloat(cgstPct) || 0) / 100)
+  const sgstAmt = subtotal * ((parseFloat(sgstPct) || 0) / 100)
+  const grandTotal = subtotal + cgstAmt + sgstAmt
 
   const selectedCompany: CompanyResponse | undefined = React.useMemo(
     () => companies.find((c) => c.id === selectedCompanyId),
@@ -141,170 +197,321 @@ export default function CreateInvoicePage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
-      <h1 className="mb-8 text-2xl font-semibold tracking-tight">Create Invoice</h1>
+      <h1 className="mb-8 text-2xl font-semibold tracking-tight">
+        Create Invoice
+      </h1>
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-
         {/* ── Grid 1: Company + Client ── */}
         <div className="flex flex-col gap-6">
+          {/* ── Company ── */}
+          <div>
+            <FieldLabel>My Company</FieldLabel>
+            {companiesLoading ? (
+              <Skeleton className="h-9 w-full rounded-md" />
+            ) : companies.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No companies found.{" "}
+                <a
+                  href="/company"
+                  className="underline underline-offset-2 hover:text-foreground"
+                >
+                  Add a company first.
+                </a>
+              </p>
+            ) : (
+              <>
+                <Combobox
+                  value={selectedCompanyId}
+                  onValueChange={(val) =>
+                    setSelectedCompanyId(val as string | null)
+                  }
+                  items={companies.map((c) => c.id)}
+                  itemToStringLabel={(id) =>
+                    companies.find((c) => c.id === id)?.name ?? ""
+                  }
+                >
+                  <ComboboxInput
+                    className="w-full"
+                    placeholder="Search company…"
+                    showClear={!!selectedCompanyId}
+                  />
+                  <ComboboxContent>
+                    <ComboboxList>
+                      <ComboboxEmpty>No companies found.</ComboboxEmpty>
+                      {companies.map((company) => (
+                        <ComboboxItem key={company.id} value={company.id}>
+                          <span className="font-medium">{company.name}</span>
+                          {company.gstin && (
+                            <span className="ml-1 text-muted-foreground">
+                              ({company.gstin})
+                            </span>
+                          )}
+                        </ComboboxItem>
+                      ))}
+                    </ComboboxList>
+                  </ComboboxContent>
+                </Combobox>
+                {selectedCompany && (
+                  <EntityDetails icon={BuildingIcon} entity={selectedCompany} />
+                )}
+              </>
+            )}
+          </div>
 
-        {/* ── Company ── */}
-        <div>
-          <FieldLabel>My Company</FieldLabel>
-          {companiesLoading ? (
-            <Skeleton className="h-9 w-full rounded-md" />
-          ) : companies.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No companies found.{" "}
-              <a href="/company" className="underline underline-offset-2 hover:text-foreground">
-                Add a company first.
-              </a>
-            </p>
-          ) : (
-            <>
-              <Combobox
-                value={selectedCompanyId}
-                onValueChange={(val) => setSelectedCompanyId(val as string | null)}
-                items={companies.map((c) => c.id)}
-                itemToStringLabel={(id) => companies.find((c) => c.id === id)?.name ?? ""}
-              >
-                <ComboboxInput
-                  className="w-full"
-                  placeholder="Search company…"
-                  showClear={!!selectedCompanyId}
-                />
-                <ComboboxContent>
-                  <ComboboxList>
-                    <ComboboxEmpty>No companies found.</ComboboxEmpty>
-                    {companies.map((company) => (
-                      <ComboboxItem key={company.id} value={company.id}>
-                        <span className="font-medium">{company.name}</span>
-                        {company.gstin && (
-                          <span className="ml-1 text-muted-foreground">
-                            ({company.gstin})
-                          </span>
-                        )}
-                      </ComboboxItem>
-                    ))}
-                  </ComboboxList>
-                </ComboboxContent>
-              </Combobox>
-              {selectedCompany && (
-                <EntityDetails
-                  icon={BuildingIcon}
-                  entity={selectedCompany}
-                />
-              )}
-            </>
-          )}
-        </div>
-
-        {/* ── Client ── */}
-        <div>
-          <FieldLabel>Client</FieldLabel>
-          {clientsLoading ? (
-            <Skeleton className="h-9 w-full rounded-md" />
-          ) : clients.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No clients found.{" "}
-              <a href="/clients" className="underline underline-offset-2 hover:text-foreground">
-                Add a client first.
-              </a>
-            </p>
-          ) : (
-            <>
-              <Combobox
-                value={selectedClientId}
-                onValueChange={(val) => setSelectedClientId(val as string | null)}
-                items={clients.map((c) => c.id)}
-                itemToStringLabel={(id) => clients.find((c) => c.id === id)?.name ?? ""}
-              >
-                <ComboboxInput
-                  className="w-full"
-                  placeholder="Search client…"
-                  showClear={!!selectedClientId}
-                />
-                <ComboboxContent>
-                  <ComboboxList>
-                    <ComboboxEmpty>No clients found.</ComboboxEmpty>
-                    {clients.map((client) => (
-                      <ComboboxItem key={client.id} value={client.id}>
-                        <span className="font-medium">{client.name}</span>
-                        {client.gstin && (
-                          <span className="ml-1 text-muted-foreground">
-                            ({client.gstin})
-                          </span>
-                        )}
-                      </ComboboxItem>
-                    ))}
-                  </ComboboxList>
-                </ComboboxContent>
-              </Combobox>
-              {selectedClient && (
-                <EntityDetails
-                  icon={UserIcon}
-                  entity={selectedClient}
-                />
-              )}
-            </>
-          )}
-        </div>
-
-        </div>{/* ── end Grid 1 ── */}
-
-        {/* ── Grid 2: Invoice Number + Date ── */}
-        <div className="flex flex-col gap-6">
-
-        {/* ── Invoice Number ── */}
-        <div>
-          <FieldLabel>Invoice Number</FieldLabel>
-          <Input
-            value={invoiceNumber}
-            onChange={(e) => setInvoiceNumber(e.target.value)}
-            placeholder={selectedCompany ? "" : "Select a company to auto-generate"}
-            className="font-mono"
-          />
-          {selectedCompany && (
-            <p className="mt-1.5 text-xs text-muted-foreground">
-              Auto-generated · you can edit this
-            </p>
-          )}
-        </div>
-
-        {/* ── Invoice Date ── */}
-        <div>
-          <FieldLabel>Invoice Date</FieldLabel>
-          <div className="relative">
-            <Button
-              variant="outline"
-              className="w-full justify-start text-left font-normal"
-              onClick={() => setCalendarOpen((o) => !o)}
-            >
-              <CalendarIcon className="mr-2 size-4 text-muted-foreground" />
-              {invoiceDate.toLocaleDateString("en-IN", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-              })}
-            </Button>
-            {calendarOpen && (
-              <div className="absolute top-full left-0 z-50 mt-1 rounded-lg border border-border bg-popover shadow-md">
-                <Calendar
-                  mode="single"
-                  selected={invoiceDate}
-                  onSelect={(date) => {
-                    if (date) setInvoiceDate(date)
-                    setCalendarOpen(false)
-                  }}
-                  defaultMonth={invoiceDate}
-                />
-              </div>
+          {/* ── Client ── */}
+          <div>
+            <FieldLabel>Client</FieldLabel>
+            {clientsLoading ? (
+              <Skeleton className="h-9 w-full rounded-md" />
+            ) : clients.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No clients found.{" "}
+                <a
+                  href="/clients"
+                  className="underline underline-offset-2 hover:text-foreground"
+                >
+                  Add a client first.
+                </a>
+              </p>
+            ) : (
+              <>
+                <Combobox
+                  value={selectedClientId}
+                  onValueChange={(val) =>
+                    setSelectedClientId(val as string | null)
+                  }
+                  items={clients.map((c) => c.id)}
+                  itemToStringLabel={(id) =>
+                    clients.find((c) => c.id === id)?.name ?? ""
+                  }
+                >
+                  <ComboboxInput
+                    className="w-full"
+                    placeholder="Search client…"
+                    showClear={!!selectedClientId}
+                  />
+                  <ComboboxContent>
+                    <ComboboxList>
+                      <ComboboxEmpty>No clients found.</ComboboxEmpty>
+                      {clients.map((client) => (
+                        <ComboboxItem key={client.id} value={client.id}>
+                          <span className="font-medium">{client.name}</span>
+                          {client.gstin && (
+                            <span className="ml-1 text-muted-foreground">
+                              ({client.gstin})
+                            </span>
+                          )}
+                        </ComboboxItem>
+                      ))}
+                    </ComboboxList>
+                  </ComboboxContent>
+                </Combobox>
+                {selectedClient && (
+                  <EntityDetails icon={UserIcon} entity={selectedClient} />
+                )}
+              </>
             )}
           </div>
         </div>
+        {/* ── end Grid 1 ── */}
 
-        </div>{/* ── end Grid 2 ── */}
+        {/* ── Grid 2: Invoice Number + Date ── */}
+        <div className="flex flex-col gap-6">
+          {/* ── Invoice Number ── */}
+          <div>
+            <FieldLabel>Invoice Number</FieldLabel>
+            <Input
+              value={invoiceNumber}
+              onChange={(e) => setInvoiceNumber(e.target.value)}
+              placeholder={
+                selectedCompany ? "" : "Select a company to auto-generate"
+              }
+              className="font-mono"
+            />
+            {selectedCompany && (
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                Auto-generated · you can edit this
+              </p>
+            )}
+          </div>
 
+          {/* ── Invoice Date ── */}
+          <div>
+            <FieldLabel>Invoice Date</FieldLabel>
+            <div className="relative">
+              <Button
+                variant="outline"
+                className="w-full justify-start text-left font-normal"
+                onClick={() => setCalendarOpen((o) => !o)}
+              >
+                <CalendarIcon className="mr-2 size-4 text-muted-foreground" />
+                {invoiceDate.toLocaleDateString("en-IN", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })}
+              </Button>
+              {calendarOpen && (
+                <div className="absolute top-full left-0 z-50 mt-1 rounded-lg border border-border bg-popover shadow-md">
+                  <Calendar
+                    mode="single"
+                    selected={invoiceDate}
+                    onSelect={(date) => {
+                      if (date) setInvoiceDate(date)
+                      setCalendarOpen(false)
+                    }}
+                    defaultMonth={invoiceDate}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        {/* ── end Grid 2 ── */}
+      </div>
+
+      {/* ── Line Items ── */}
+      <div className="mt-10">
+        <h2 className="mb-3 text-base font-semibold">Line Items</h2>
+
+        <div className="overflow-x-auto rounded-md border border-border">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-muted/40 text-left text-xs font-medium text-muted-foreground">
+                <th className="w-12 px-3 py-2.5">#</th>
+                <th className="px-3 py-2.5">Description</th>
+                <th className="w-28 px-3 py-2.5">Quantity</th>
+                <th className="w-28 px-3 py-2.5">Rate</th>
+                <th className="w-32 px-3 py-2.5">Amount</th>
+                <th className="w-10 px-3 py-2.5" />
+              </tr>
+            </thead>
+            <tbody>
+              {lineItems.map((row, idx) => {
+                const qty = parseFloat(row.quantity) || 0
+                const rate = parseFloat(row.rate) || 0
+                const amount = qty * rate
+                return (
+                  <tr
+                    key={row.id}
+                    className="border-b border-border/60 last:border-0"
+                  >
+                    <td className="px-3 py-1.5 text-muted-foreground">
+                      {idx + 1}
+                    </td>
+                    <td className="px-3 py-1.5">
+                      <Input
+                        value={row.description}
+                        onChange={(e) =>
+                          updateRow(row.id, "description", e.target.value)
+                        }
+                        placeholder="Item description"
+                        className="h-8 border border-transparent bg-transparent shadow-none hover:border-border focus:border-border focus:bg-input/20 focus-visible:ring-0 dark:bg-transparent dark:focus:bg-input/30"
+                      />
+                    </td>
+                    <td className="px-3 py-1.5">
+                      <Input
+                        type="number"
+                        value={row.quantity}
+                        onChange={(e) =>
+                          updateRow(row.id, "quantity", e.target.value)
+                        }
+                        placeholder="0"
+                        className="h-8 border border-transparent bg-transparent shadow-none hover:border-border focus:border-border focus:bg-input/20 focus-visible:ring-0 dark:bg-transparent dark:focus:bg-input/30"
+                      />
+                    </td>
+                    <td className="px-3 py-1.5">
+                      <Input
+                        type="number"
+                        value={row.rate}
+                        onChange={(e) =>
+                          updateRow(row.id, "rate", e.target.value)
+                        }
+                        placeholder="0.00"
+                        className="h-8 border border-transparent bg-transparent shadow-none hover:border-border focus:border-border focus:bg-input/20 focus-visible:ring-0 dark:bg-transparent dark:focus:bg-input/30"
+                      />
+                    </td>
+                    <td className="px-3 py-1.5 font-mono text-sm">
+                      {amount > 0
+                        ? amount.toLocaleString("en-IN", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })
+                        : "—"}
+                    </td>
+                    <td className="px-3 py-1.5">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-7 text-muted-foreground hover:text-destructive"
+                        onClick={() => removeRow(row.id)}
+                        disabled={lineItems.length === 1}
+                      >
+                        <Trash2Icon className="size-3.5" />
+                      </Button>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* ── Add row ── */}
+        <button
+          type="button"
+          onClick={addRow}
+          className="mt-0 w-full rounded-b-md border border-dashed border-border/60 py-2 text-xs text-muted-foreground transition-colors hover:border-primary hover:bg-muted/30"
+        >
+          <span className="flex items-center justify-center gap-1.5 hover:text-primary">
+            <PlusIcon className="size-3.5" />
+            Add row
+          </span>
+        </button>
+
+        {/* ── Tax summary ── */}
+        <div className="mt-4 flex flex-col items-end gap-1.5">
+          {/* CGST */}
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-muted-foreground">CGST @</span>
+            <Input
+              type="number"
+              value={cgstPct}
+              onChange={(e) => setCgstPct(e.target.value)}
+              placeholder="0"
+              className="h-7 w-16 text-center"
+            />
+            <span className="text-muted-foreground">%</span>
+            <span className="w-32 text-right font-mono text-sm">
+              {cgstAmt.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+          </div>
+
+          {/* SGST */}
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-muted-foreground">SGST @</span>
+            <Input
+              type="number"
+              value={sgstPct}
+              onChange={(e) => setSgstPct(e.target.value)}
+              placeholder="0"
+              className="h-7 w-16 text-center"
+            />
+            <span className="text-muted-foreground">%</span>
+            <span className="w-32 text-right font-mono text-sm">
+              {sgstAmt.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+          </div>
+
+          {/* Grand total */}
+          <div className="mt-1 flex items-center gap-2 border-t border-border pt-2 text-sm font-semibold">
+            <span>Total</span>
+            <span className="w-32 text-right font-mono">
+              {grandTotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   )
