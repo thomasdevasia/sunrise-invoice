@@ -19,6 +19,7 @@ export type CompanyResponse = {
     website: string
     pan: string
     gstin: string
+    address: string
     state: string
 }
 
@@ -34,6 +35,7 @@ function rowToResponse(row: CompanyRow): CompanyResponse {
         website: row.website,
         pan: row.pan,
         gstin: row.gstin,
+        address: row.address,
         state: row.state,
     }
 }
@@ -48,6 +50,7 @@ export async function createCompanyAction(data: {
     website: string
     pan: string
     gstin: string
+    address: string
     state: string
 }): Promise<CompanyResponse> {
     const row = createCompany({
@@ -69,6 +72,7 @@ export async function updateCompanyAction(data: CompanyResponse): Promise<Compan
         website: data.website,
         pan: data.pan,
         gstin: data.gstin,
+        address: data.address,
         state: data.state,
     })
     return rowToResponse(row)

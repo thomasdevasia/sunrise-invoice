@@ -11,6 +11,7 @@ export type CompanyRow = {
     website: string
     pan: string
     gstin: string
+    address: string
     state: string
     created_at: string
     updated_at: string
@@ -37,6 +38,7 @@ function ensureCompaniesTable() {
         website         TEXT DEFAULT '',
         pan             TEXT NOT NULL,
         gstin           TEXT NOT NULL,
+        address         TEXT DEFAULT '',
         state           TEXT NOT NULL,
         created_at      TEXT DEFAULT (datetime('now')),
         updated_at      TEXT DEFAULT (datetime('now'))
@@ -56,14 +58,15 @@ export function createCompany(company: {
     website: string
     pan: string
     gstin: string
+    address: string
     state: string
 }): CompanyRow {
     ensureCompaniesTable()
     const db = getDb()
 
     const stmt = db.prepare(`
-    INSERT INTO companies (id, name, email_primary, email_secondary, phone_primary, phone_secondary, phone_landline, website, pan, gstin, state)
-    VALUES (@id, @name, @emailPrimary, @emailSecondary, @phonePrimary, @phoneSecondary, @phoneLandline, @website, @pan, @gstin, @state)
+    INSERT INTO companies (id, name, email_primary, email_secondary, phone_primary, phone_secondary, phone_landline, website, pan, gstin, address, state)
+    VALUES (@id, @name, @emailPrimary, @emailSecondary, @phonePrimary, @phoneSecondary, @phoneLandline, @website, @pan, @gstin, @address, @state)
   `)
 
     stmt.run({
@@ -77,6 +80,7 @@ export function createCompany(company: {
         website: company.website,
         pan: company.pan,
         gstin: company.gstin,
+        address: company.address,
         state: company.state,
     })
 
@@ -104,6 +108,7 @@ export function updateCompany(company: {
     website: string
     pan: string
     gstin: string
+    address: string
     state: string
 }): CompanyRow {
     ensureCompaniesTable()
@@ -120,6 +125,7 @@ export function updateCompany(company: {
       website         = @website,
       pan             = @pan,
       gstin           = @gstin,
+      address         = @address,
       state           = @state,
       updated_at      = datetime('now')
     WHERE id = @id
@@ -134,6 +140,7 @@ export function updateCompany(company: {
         website: company.website,
         pan: company.pan,
         gstin: company.gstin,
+        address: company.address,
         state: company.state,
     })
 

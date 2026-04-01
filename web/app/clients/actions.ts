@@ -17,6 +17,7 @@ export type ClientResponse = {
     phoneSecondary: string
     phoneLandline: string
     gstin: string
+    address: string
     state: string
 }
 
@@ -30,6 +31,7 @@ function rowToResponse(row: ClientRow): ClientResponse {
         phoneSecondary: row.phone_secondary,
         phoneLandline: row.phone_landline,
         gstin: row.gstin,
+        address: row.address,
         state: row.state,
     }
 }
@@ -42,6 +44,7 @@ export async function createClientAction(data: {
     phoneSecondary: string
     phoneLandline: string
     gstin: string
+    address: string
     state: string
 }): Promise<ClientResponse> {
     const row = createClient({ id: crypto.randomUUID(), ...data })
@@ -60,6 +63,7 @@ export async function updateClientAction(
         phoneSecondary: data.phoneSecondary,
         phoneLandline: data.phoneLandline,
         gstin: data.gstin,
+        address: data.address,
         state: data.state,
     })
     return rowToResponse(row)

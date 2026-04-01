@@ -60,6 +60,7 @@ const EMPTY_FORM: Omit<Client, "id"> = {
   phoneSecondary: "",
   phoneLandline: "",
   gstin: "",
+  address: "",
   state: "",
 }
 
@@ -114,6 +115,7 @@ function ClientCard({
           <CardRow icon={PhoneIcon} value={client.phoneSecondary} tag="(S)" />
           <CardRow icon={PhoneCallIcon} value={client.phoneLandline} />
           <CardRow icon={MapPinIcon} value={client.state} />
+          <CardRow icon={MapPinIcon} value={client.address} tag="Addr" />
           <CardRow icon={ReceiptTextIcon} value={client.gstin} mono />
         </ul>
       </CardContent>
@@ -203,6 +205,7 @@ export default function ClientsPage() {
       phoneSecondary: client.phoneSecondary,
       phoneLandline: client.phoneLandline,
       gstin: client.gstin,
+      address: client.address,
       state: client.state,
     })
     setDialogOpen(true)
@@ -264,6 +267,19 @@ export default function ClientsPage() {
                   name="state"
                   placeholder="Karnataka"
                   value={form.state}
+                  onChange={handleFormChange}
+                  required
+                />
+              </div>
+              <div className="col-span-2 grid gap-1.5">
+                <label htmlFor="address" className="text-xs font-medium">
+                  Address <span className="text-destructive">*</span>
+                </label>
+                <Input
+                  id="address"
+                  name="address"
+                  placeholder="123 Main St, Bangalore"
+                  value={form.address}
                   onChange={handleFormChange}
                   required
                 />

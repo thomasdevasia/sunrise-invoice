@@ -66,6 +66,7 @@ const EMPTY_FORM: Omit<Company, "id"> = {
   website: "",
   pan: "",
   gstin: "",
+  address: "",
   state: "",
 }
 
@@ -133,6 +134,7 @@ function CompanyCard({
           <CardRow icon={PhoneCallIcon} value={company.phoneLandline} />
           {/* Location */}
           <CardRow icon={MapPinIcon} value={company.state} />
+          <CardRow icon={MapPinIcon} value={company.address} tag="Addr" />
           {/* Website */}
           <CardRow icon={GlobeIcon} value={company.website} />
           {/* Tax */}
@@ -230,6 +232,7 @@ export default function CompanyPage() {
       website: company.website,
       pan: company.pan,
       gstin: company.gstin,
+      address: company.address,
       state: company.state,
     })
     setDialogOpen(true)
@@ -291,6 +294,19 @@ export default function CompanyPage() {
                   name="state"
                   placeholder="Karnataka"
                   value={form.state}
+                  onChange={handleFormChange}
+                  required
+                />
+              </div>
+              <div className="col-span-2 grid gap-1.5">
+                <label htmlFor="address" className="text-xs font-medium">
+                  Address <span className="text-destructive">*</span>
+                </label>
+                <Input
+                  id="address"
+                  name="address"
+                  placeholder="123 Main St, Bangalore"
+                  value={form.address}
                   onChange={handleFormChange}
                   required
                 />

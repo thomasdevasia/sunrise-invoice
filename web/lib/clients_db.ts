@@ -9,6 +9,7 @@ export type ClientRow = {
     phone_secondary: string
     phone_landline: string
     gstin: string
+    address: string
     state: string
     created_at: string
     updated_at: string
@@ -33,6 +34,7 @@ function ensureClientsTable() {
         phone_secondary TEXT DEFAULT '',
         phone_landline  TEXT DEFAULT '',
         gstin           TEXT NOT NULL,
+        address         TEXT DEFAULT '',
         state           TEXT NOT NULL,
         created_at      TEXT DEFAULT (datetime('now')),
         updated_at      TEXT DEFAULT (datetime('now'))
@@ -50,14 +52,15 @@ export function createClient(client: {
     phoneSecondary: string
     phoneLandline: string
     gstin: string
+    address: string
     state: string
 }): ClientRow {
     ensureClientsTable()
     const db = getDb()
 
     db.prepare(`
-    INSERT INTO clients (id, name, email_primary, email_secondary, phone_primary, phone_secondary, phone_landline, gstin, state)
-    VALUES (@id, @name, @emailPrimary, @emailSecondary, @phonePrimary, @phoneSecondary, @phoneLandline, @gstin, @state)
+    INSERT INTO clients (id, name, email_primary, email_secondary, phone_primary, phone_secondary, phone_landline, gstin, address, state)
+    VALUES (@id, @name, @emailPrimary, @emailSecondary, @phonePrimary, @phoneSecondary, @phoneLandline, @gstin, @address, @state)
   `).run({
         id: client.id,
         name: client.name,
@@ -67,6 +70,7 @@ export function createClient(client: {
         phoneSecondary: client.phoneSecondary,
         phoneLandline: client.phoneLandline,
         gstin: client.gstin,
+        address: client.address,
         state: client.state,
     })
 
@@ -84,6 +88,7 @@ export function updateClient(client: {
     phoneSecondary: string
     phoneLandline: string
     gstin: string
+    address: string
     state: string
 }): ClientRow {
     ensureClientsTable()
@@ -98,6 +103,7 @@ export function updateClient(client: {
       phone_secondary = @phoneSecondary,
       phone_landline  = @phoneLandline,
       gstin           = @gstin,
+      address         = @address,
       state           = @state,
       updated_at      = datetime('now')
     WHERE id = @id
@@ -110,6 +116,7 @@ export function updateClient(client: {
         phoneSecondary: client.phoneSecondary,
         phoneLandline: client.phoneLandline,
         gstin: client.gstin,
+        address: client.address,
         state: client.state,
     })
 
