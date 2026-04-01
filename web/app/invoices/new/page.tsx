@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Separator } from "@/components/ui/separator"
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -459,16 +460,16 @@ export default function CreateInvoicePage() {
         </div>
 
         {/* ── Add row ── */}
-        <button
-          type="button"
+        <Button
+          variant="ghost"
           onClick={addRow}
-          className="mt-0 w-full rounded-b-md border border-dashed border-border/60 py-2 text-xs text-muted-foreground transition-colors hover:border-primary hover:bg-muted/30"
+          className="group mt-0 w-full rounded-t-none rounded-b-md border border-dashed border-border/60 py-2 text-xs text-muted-foreground transition-colors hover:border-primary hover:bg-muted/30"
         >
-          <span className="flex items-center justify-center gap-1.5 hover:text-primary">
+          <span className="flex items-center justify-center gap-1.5 group-hover:text-primary">
             <PlusIcon className="size-3.5" />
             Add row
           </span>
-        </button>
+        </Button>
 
         {/* ── Tax summary ── */}
         <div className="mt-4 flex flex-col items-end gap-1.5">
@@ -484,34 +485,51 @@ export default function CreateInvoicePage() {
             />
             <span className="text-muted-foreground">%</span>
             <span className="w-32 text-right font-mono text-sm">
-              {cgstAmt.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {cgstAmt.toLocaleString("en-IN", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
             </span>
           </div>
 
           {/* SGST */}
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-muted-foreground">SGST @</span>
-            <Input
-              type="number"
-              value={sgstPct}
-              onChange={(e) => setSgstPct(e.target.value)}
-              placeholder="0"
-              className="h-7 w-16 text-center"
-            />
-            <span className="text-muted-foreground">%</span>
-            <span className="w-32 text-right font-mono text-sm">
-              {sgstAmt.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
+          <div>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-muted-foreground">SGST @</span>
+              <Input
+                type="number"
+                value={sgstPct}
+                onChange={(e) => setSgstPct(e.target.value)}
+                placeholder="0"
+                className="h-7 w-16 text-center"
+              />
+              <span className="text-muted-foreground">%</span>
+              <span className="w-32 text-right font-mono text-sm">
+                {sgstAmt.toLocaleString("en-IN", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </span>
+            </div>
+            <Separator className="my-1" />
           </div>
 
           {/* Grand total */}
-          <div className="mt-1 flex items-center gap-2 border-t border-border pt-2 text-sm font-semibold">
+          <div className="flex items-center gap-2 text-sm font-semibold">
             <span>Total</span>
             <span className="w-32 text-right font-mono">
-              {grandTotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {grandTotal.toLocaleString("en-IN", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
             </span>
           </div>
         </div>
+      </div>
+
+      {/* ── Save ── */}
+      <div className="mt-8 flex justify-end">
+        <Button>Save Invoice</Button>
       </div>
     </div>
   )
