@@ -9,10 +9,10 @@ const rendererBuildPath = path.join(__dirname, "../build/client/index.html")
 
 function createMainWindow() {
   const mainWindow = new BrowserWindow({
-    width: 1280,
-    height: 800,
-    minWidth: 1024,
-    minHeight: 640,
+    // width: 1280,
+    // height: 800,
+    // minWidth: 1024,
+    // minHeight: 640,
     backgroundColor: "#ffffff",
     webPreferences: {
       contextIsolation: true,
