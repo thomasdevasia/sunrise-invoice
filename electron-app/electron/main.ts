@@ -1,4 +1,10 @@
-import { app, BrowserWindow } from "electron"
+import { app, BrowserWindow, ipcMain } from "electron"
+import {
+  getAllCompanies,
+  createCompany,
+  updateCompany,
+  deleteCompany,
+} from "./db.js"
 import { existsSync } from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
@@ -72,6 +78,15 @@ app.on("second-instance", () => {
 })
 
 app.whenReady().then(() => {
+  // ─── IPC handlers ──────────────────────────────────────────────────────────
+  ipcMain.handle("companies:getAll", () => getAllCompanies())
+
+  ipcMain.handle("companies:create", (_event, data) => createCompany(data))
+
+  ipcMain.handle("companies:update", (_event, data) => updateCompany(data))
+
+  ipcMain.handle("companies:delete", (_event, id: string) => deleteCompany(id))
+
   createMainWindow()
 
   app.on("activate", () => {
