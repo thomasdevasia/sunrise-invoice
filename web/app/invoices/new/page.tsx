@@ -527,9 +527,9 @@ export default function CreateInvoicePage() {
         </div>
       </div>
 
-      {/* ── Save ── */}
+      {/* ── Create Invoice ── */}
       <div className="mt-8 flex justify-end">
-        <Button>Save Invoice</Button>
+        <Button>Create</Button>
       </div>
     </div>
   )
