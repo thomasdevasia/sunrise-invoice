@@ -1,3 +1,4 @@
+import { useEffect } from "react"
 import {
   Links,
   Meta,
@@ -16,7 +17,10 @@ import {
   SidebarTrigger,
 } from "~/components/ui/sidebar"
 import { Separator } from "~/components/ui/separator"
+import { Switch } from "~/components/ui/switch"
 import { TooltipProvider } from "~/components/ui/tooltip"
+import { Moon, Sun } from "lucide-react"
+import { useThemeStore } from "~/store/theme"
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -37,6 +41,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  const isDark = useThemeStore((s) => s.isDark)
+  const toggle = useThemeStore((s) => s.toggle)
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", isDark)
+  }, [isDark])
+
   return (
     <TooltipProvider>
       <SidebarProvider defaultOpen={false}>
@@ -45,6 +56,11 @@ export default function App() {
           <header className="flex h-12 items-center gap-2 border-b px-3">
             <SidebarTrigger />
             <Separator orientation="vertical" className="h-full" />
+            <div className="ml-auto flex shrink-0 items-center gap-2">
+              <Sun className="size-3.5 text-muted-foreground" />
+              <Switch checked={isDark} onCheckedChange={() => toggle()} />
+              <Moon className="size-3.5 text-muted-foreground" />
+            </div>
           </header>
           <main className="flex-1 p-4">
             <Outlet />
