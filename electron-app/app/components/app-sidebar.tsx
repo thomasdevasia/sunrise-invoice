@@ -1,5 +1,3 @@
-"use client"
-
 import {
   Building2,
   FilePlus,
@@ -8,6 +6,7 @@ import {
   Receipt,
   Users,
 } from "lucide-react"
+import { Link } from "react-router"
 
 import {
   Sidebar,
@@ -54,7 +53,7 @@ export function AppSidebar() {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     size="lg"
-                    render={<a href={item.url} />}
+                    render={<Link to={item.url} />}
                     tooltip={item.title}
                     className="[&_svg]:size-6"
                   >

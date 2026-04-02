@@ -9,6 +9,14 @@ import {
 
 import type { Route } from "./+types/root"
 import "./app.css"
+import { AppSidebar } from "~/components/app-sidebar"
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "~/components/ui/sidebar"
+import { Separator } from "~/components/ui/separator"
+import { TooltipProvider } from "~/components/ui/tooltip"
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -29,7 +37,22 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  return <Outlet />
+  return (
+    <TooltipProvider>
+      <SidebarProvider defaultOpen={false}>
+        <AppSidebar />
+        <SidebarInset>
+          <header className="flex h-12 items-center gap-2 border-b px-3">
+            <SidebarTrigger />
+            <Separator orientation="vertical" className="h-full" />
+          </header>
+          <main className="flex-1 p-4">
+            <Outlet />
+          </main>
+        </SidebarInset>
+      </SidebarProvider>
+    </TooltipProvider>
+  )
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
