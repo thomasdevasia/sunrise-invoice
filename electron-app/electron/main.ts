@@ -8,6 +8,11 @@ import {
   createClient,
   updateClient,
   deleteClient,
+  getAllInvoices,
+  getInvoiceCount,
+  createInvoice,
+  updateInvoice,
+  deleteInvoice,
 } from "./db.js"
 import { existsSync } from "node:fs"
 import path from "node:path"
@@ -98,6 +103,16 @@ app.whenReady().then(() => {
   ipcMain.handle("clients:update", (_event, data) => updateClient(data))
 
   ipcMain.handle("clients:delete", (_event, id: string) => deleteClient(id))
+
+  ipcMain.handle("invoices:getAll", () => getAllInvoices())
+
+  ipcMain.handle("invoices:getCount", () => getInvoiceCount())
+
+  ipcMain.handle("invoices:create", (_event, data) => createInvoice(data))
+
+  ipcMain.handle("invoices:update", (_event, data) => updateInvoice(data))
+
+  ipcMain.handle("invoices:delete", (_event, id: string) => deleteInvoice(id))
 
   createMainWindow()
 

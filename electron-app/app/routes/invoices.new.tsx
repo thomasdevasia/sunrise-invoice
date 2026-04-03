@@ -1,5 +1,6 @@
 import * as React from "react"
 import { useQuery } from "@tanstack/react-query"
+import { useNavigate } from "react-router"
 import {
   BuildingIcon,
   UserIcon,
@@ -261,14 +262,58 @@ export default function NewInvoice() {
   )
 
   // Auto-generate invoice number when company changes.
-  // Count is hardcoded to 1 until the DB layer is added.
+  // Uses live count from the DB so the number is always correct.
   React.useEffect(() => {
-    if (selectedCompany) {
-      setInvoiceNumber(buildInvoiceNumber(1, selectedCompany.name, fy))
-    } else {
+    if (!selectedCompany) {
       setInvoiceNumber("")
+      return
     }
+    void window.electronAPI.invoices.getCount().then((count) => {
+      setInvoiceNumber(buildInvoiceNumber(count + 1, selectedCompany.name, fy))
+    })
   }, [selectedCompany, fy])
+
+  const navigate = useNavigate()
+  const [saving, setSaving] = React.useState(false)
+  const [saveError, setSaveError] = React.useState<string | null>(null)
+
+  async function handleCreate() {
+    if (!selectedCompanyId) { setSaveError("Please select a company."); return }
+    if (!selectedClientId)  { setSaveError("Please select a client.");  return }
+    if (!invoiceNumber.trim()) { setSaveError("Invoice number is required."); return }
+
+    setSaveError(null)
+    setSaving(true)
+    try {
+      const billedItems = JSON.stringify({
+        items: lineItems.map((r) => ({
+          description: r.description,
+          quantity:    parseFloat(r.quantity) || 0,
+          rate:        parseFloat(r.rate)     || 0,
+          amount:      (parseFloat(r.quantity) || 0) * (parseFloat(r.rate) || 0),
+        })),
+        cgst_percentage: parseFloat(cgstPct) || 0,
+        sgst_percentage: parseFloat(sgstPct) || 0,
+      })
+
+      await window.electronAPI.invoices.create({
+        id:             crypto.randomUUID(),
+        company_id:     selectedCompanyId,
+        client_id:      selectedClientId,
+        invoice_number: invoiceNumber.trim(),
+        invoice_date:   invoiceDate.toISOString().slice(0, 10),
+        billed_items:   billedItems,
+      })
+
+      void navigate("/invoices")
+    } catch (err: unknown) {
+      setSaveError(
+        err instanceof Error ? err.message : "Failed to save invoice."
+      )
+    } finally {
+      setSaving(false)
+    }
+  }
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
@@ -604,8 +649,13 @@ export default function NewInvoice() {
       </div>
 
       {/* ── Create Invoice ── */}
-      <div className="mt-8 flex justify-end">
-        <Button>Create</Button>
+      <div className="mt-8 flex flex-col items-end gap-2">
+        {saveError && (
+          <p className="text-sm text-destructive">{saveError}</p>
+        )}
+        <Button onClick={handleCreate} disabled={saving}>
+          {saving ? "Saving…" : "Create Invoice"}
+        </Button>
       </div>
     </div>
   )

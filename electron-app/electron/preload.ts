@@ -52,9 +52,32 @@ const clientsAPI = {
         ipcRenderer.invoke("clients:delete", id),
 }
 
+export type InvoiceData = {
+    id: string
+    company_id: string
+    client_id: string
+    invoice_number: string
+    invoice_date: string   // ISO 8601: "YYYY-MM-DD"
+    billed_items: string   // JSON: { items: [...], cgst_percentage, sgst_percentage }
+}
+
+const invoicesAPI = {
+    getAll: (): Promise<InvoiceData[]> =>
+        ipcRenderer.invoke("invoices:getAll"),
+    getCount: (): Promise<number> =>
+        ipcRenderer.invoke("invoices:getCount"),
+    create: (data: InvoiceData): Promise<InvoiceData> =>
+        ipcRenderer.invoke("invoices:create", data),
+    update: (data: InvoiceData): Promise<InvoiceData> =>
+        ipcRenderer.invoke("invoices:update", data),
+    delete: (id: string): Promise<void> =>
+        ipcRenderer.invoke("invoices:delete", id),
+}
+
 contextBridge.exposeInMainWorld("electronAPI", {
     companies: companiesAPI,
     clients: clientsAPI,
+    invoices: invoicesAPI,
 })
 
 declare global {
@@ -62,6 +85,7 @@ declare global {
         electronAPI: {
             companies: typeof companiesAPI
             clients: typeof clientsAPI
+            invoices: typeof invoicesAPI
         }
     }
 }
