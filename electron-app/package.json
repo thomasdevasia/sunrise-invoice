@@ -1,5 +1,5 @@
 {
-  "name": "electron-app",
+  "name": "sunrise-invoices",
   "private": true,
   "type": "module",
   "main": "./dist-electron/main.js",

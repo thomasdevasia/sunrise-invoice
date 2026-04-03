@@ -8,11 +8,11 @@ export type CompanyRow = {
     id: string
     name: string
     email_primary: string
-    email_secondary: string
+    email_secondary: string | null
     phone_primary: string
-    phone_secondary: string
-    phone_landline: string
-    website: string
+    phone_secondary: string | null
+    phone_landline: string | null
+    website: string | null
     pan: string
     gstin: string
     address: string
@@ -23,10 +23,10 @@ export type ClientRow = {
     id: string
     name: string
     email_primary: string
-    email_secondary: string
+    email_secondary: string | null
     phone_primary: string
-    phone_secondary: string
-    phone_landline: string
+    phone_secondary: string | null
+    phone_landline: string | null
     gstin: string
     address: string
     state: string
@@ -74,11 +74,11 @@ function migrate(db: Database.Database) {
       id             TEXT PRIMARY KEY,
       name           TEXT NOT NULL,
       email_primary  TEXT NOT NULL,
-      email_secondary TEXT NOT NULL DEFAULT '',
+      email_secondary TEXT,
       phone_primary  TEXT NOT NULL,
-      phone_secondary TEXT NOT NULL DEFAULT '',
-      phone_landline TEXT NOT NULL DEFAULT '',
-      website        TEXT NOT NULL DEFAULT '',
+      phone_secondary TEXT,
+      phone_landline TEXT,
+      website        TEXT,
       pan            TEXT NOT NULL,
       gstin          TEXT NOT NULL,
       address        TEXT NOT NULL,
@@ -88,10 +88,10 @@ function migrate(db: Database.Database) {
       id              TEXT PRIMARY KEY,
       name            TEXT NOT NULL,
       email_primary   TEXT NOT NULL,
-      email_secondary TEXT NOT NULL DEFAULT '',
+      email_secondary TEXT,
       phone_primary   TEXT NOT NULL,
-      phone_secondary TEXT NOT NULL DEFAULT '',
-      phone_landline  TEXT NOT NULL DEFAULT '',
+      phone_secondary TEXT,
+      phone_landline  TEXT,
       gstin           TEXT NOT NULL,
       address         TEXT NOT NULL,
       state           TEXT NOT NULL
@@ -128,13 +128,6 @@ export function createCompany(data: Omit<CompanyRow, never>): CompanyRow {
 }
 
 export function updateCompany(data: CompanyRow): CompanyRow {
-    const safe = {
-        ...data,
-        email_secondary:  data.email_secondary  ?? "",
-        phone_secondary:  data.phone_secondary  ?? "",
-        phone_landline:   data.phone_landline   ?? "",
-        website:          data.website          ?? "",
-    }
     getDb()
         .prepare(
             `UPDATE companies SET
@@ -151,7 +144,7 @@ export function updateCompany(data: CompanyRow): CompanyRow {
         state = @state
        WHERE id = @id`
         )
-        .run(safe)
+        .run(data)
     return getDb().prepare("SELECT * FROM companies WHERE id = ?").get(data.id) as CompanyRow
 }
 
@@ -180,12 +173,6 @@ export function createClient(data: ClientRow): ClientRow {
 }
 
 export function updateClient(data: ClientRow): ClientRow {
-    const safe = {
-        ...data,
-        email_secondary:  data.email_secondary  ?? "",
-        phone_secondary:  data.phone_secondary  ?? "",
-        phone_landline:   data.phone_landline   ?? "",
-    }
     getDb()
         .prepare(
             `UPDATE clients SET
@@ -200,7 +187,7 @@ export function updateClient(data: ClientRow): ClientRow {
         state = @state
        WHERE id = @id`
         )
-        .run(safe)
+        .run(data)
     return getDb().prepare("SELECT * FROM clients WHERE id = ?").get(data.id) as ClientRow
 }
 
