@@ -52,6 +52,8 @@ export type InvoiceRow = {
     invoice_number: string
     invoice_date: string   // ISO 8601: "YYYY-MM-DD"
     billed_items: string   // JSON-serialised BilledItems
+    created_at?: string
+    updated_at?: string
 }
 
 // ─── DB setup ─────────────────────────────────────────────────────────────────
@@ -102,8 +104,10 @@ function migrate(db: Database.Database) {
       client_id       TEXT NOT NULL REFERENCES clients(id),
       invoice_number  TEXT NOT NULL UNIQUE,
       invoice_date    TEXT NOT NULL,
-      billed_items    TEXT NOT NULL
-    )
+      billed_items    TEXT NOT NULL,
+      created_at      TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at      TEXT DEFAULT CURRENT_TIMESTAMP
+    );
   `)
 }
 
@@ -199,7 +203,7 @@ export function deleteClient(id: string): void {
 
 export function getAllInvoices(): InvoiceRow[] {
     return getDb()
-        .prepare("SELECT * FROM invoices ORDER BY invoice_date DESC")
+        .prepare("SELECT * FROM invoices ORDER BY created_at DESC")
         .all() as InvoiceRow[]
 }
 
@@ -252,7 +256,7 @@ export function getInvoicesPaginated(params: InvoiceFilter): PaginatedInvoices {
 
     const invoices = getDb()
         .prepare(
-            `SELECT * FROM invoices ${where} ORDER BY invoice_date DESC, invoice_number DESC LIMIT ? OFFSET ?`
+            `SELECT * FROM invoices ${where} ORDER BY created_at DESC, invoice_number DESC LIMIT ? OFFSET ?`
         )
         .all(...bindings, pageSize, offset) as InvoiceRow[]
 
@@ -260,20 +264,24 @@ export function getInvoicesPaginated(params: InvoiceFilter): PaginatedInvoices {
 }
 
 export function createInvoice(data: InvoiceRow): InvoiceRow {
+    const now = new Date().toISOString()
+    const insertData = { ...data, created_at: now, updated_at: now }
     getDb()
         .prepare(
             `INSERT INTO invoices
-         (id, company_id, client_id, invoice_number, invoice_date, billed_items)
+         (id, company_id, client_id, invoice_number, invoice_date, billed_items, created_at, updated_at)
        VALUES
-         (@id, @company_id, @client_id, @invoice_number, @invoice_date, @billed_items)`
+         (@id, @company_id, @client_id, @invoice_number, @invoice_date, @billed_items, @created_at, @updated_at)`
         )
-        .run(data)
+        .run(insertData)
     return getDb()
         .prepare("SELECT * FROM invoices WHERE id = ?")
         .get(data.id) as InvoiceRow
 }
 
 export function updateInvoice(data: InvoiceRow): InvoiceRow {
+    const now = new Date().toISOString()
+    const updateData = { ...data, updated_at: now }
     getDb()
         .prepare(
             `UPDATE invoices SET
@@ -281,10 +289,11 @@ export function updateInvoice(data: InvoiceRow): InvoiceRow {
          client_id      = @client_id,
          invoice_number = @invoice_number,
          invoice_date   = @invoice_date,
-         billed_items   = @billed_items
+         billed_items   = @billed_items,
+         updated_at     = @updated_at
         WHERE id = @id`
         )
-        .run(data)
+        .run(updateData)
     return getDb()
         .prepare("SELECT * FROM invoices WHERE id = ?")
         .get(data.id) as InvoiceRow
