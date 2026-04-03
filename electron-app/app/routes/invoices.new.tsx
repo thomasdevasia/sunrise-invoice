@@ -552,8 +552,9 @@ export default function NewInvoice() {
             <span className="text-muted-foreground">CGST @</span>
             <Input
               type="number"
+              min="0"
               value={cgstPct}
-              onChange={(e) => setCgstPct(e.target.value)}
+              onChange={(e) => setCgstPct(Math.max(0, parseFloat(e.target.value) || 0).toString())}
               placeholder="0"
               className="h-7 w-16 text-center"
             />
@@ -572,8 +573,9 @@ export default function NewInvoice() {
               <span className="text-muted-foreground">SGST @</span>
               <Input
                 type="number"
+                min="0"
                 value={sgstPct}
-                onChange={(e) => setSgstPct(e.target.value)}
+                onChange={(e) => setSgstPct(Math.max(0, parseFloat(e.target.value) || 0).toString())}
                 placeholder="0"
                 className="h-7 w-16 text-center"
               />
