@@ -19,6 +19,19 @@ export type CompanyRow = {
     state: string
 }
 
+export type ClientRow = {
+    id: string
+    name: string
+    email_primary: string
+    email_secondary: string
+    phone_primary: string
+    phone_secondary: string
+    phone_landline: string
+    gstin: string
+    address: string
+    state: string
+}
+
 // ─── DB setup ─────────────────────────────────────────────────────────────────
 
 let _db: Database.Database | null = null
@@ -48,6 +61,18 @@ function migrate(db: Database.Database) {
       gstin          TEXT NOT NULL,
       address        TEXT NOT NULL,
       state          TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS clients (
+      id              TEXT PRIMARY KEY,
+      name            TEXT NOT NULL,
+      email_primary   TEXT NOT NULL,
+      email_secondary TEXT NOT NULL DEFAULT '',
+      phone_primary   TEXT NOT NULL,
+      phone_secondary TEXT NOT NULL DEFAULT '',
+      phone_landline  TEXT NOT NULL DEFAULT '',
+      gstin           TEXT NOT NULL,
+      address         TEXT NOT NULL,
+      state           TEXT NOT NULL
     )
   `)
 }
@@ -95,4 +120,47 @@ export function updateCompany(data: CompanyRow): CompanyRow {
 
 export function deleteCompany(id: string): void {
     getDb().prepare("DELETE FROM companies WHERE id = ?").run(id)
+}
+
+// ─── Clients CRUD ─────────────────────────────────────────────────────────────
+
+export function getAllClients(): ClientRow[] {
+    return getDb().prepare("SELECT * FROM clients ORDER BY name ASC").all() as ClientRow[]
+}
+
+export function createClient(data: ClientRow): ClientRow {
+    getDb()
+        .prepare(
+            `INSERT INTO clients
+        (id, name, email_primary, email_secondary, phone_primary, phone_secondary,
+         phone_landline, gstin, address, state)
+       VALUES
+        (@id, @name, @email_primary, @email_secondary, @phone_primary, @phone_secondary,
+         @phone_landline, @gstin, @address, @state)`
+        )
+        .run(data)
+    return getDb().prepare("SELECT * FROM clients WHERE id = ?").get(data.id) as ClientRow
+}
+
+export function updateClient(data: ClientRow): ClientRow {
+    getDb()
+        .prepare(
+            `UPDATE clients SET
+        name = @name,
+        email_primary = @email_primary,
+        email_secondary = @email_secondary,
+        phone_primary = @phone_primary,
+        phone_secondary = @phone_secondary,
+        phone_landline = @phone_landline,
+        gstin = @gstin,
+        address = @address,
+        state = @state
+       WHERE id = @id`
+        )
+        .run(data)
+    return getDb().prepare("SELECT * FROM clients WHERE id = ?").get(data.id) as ClientRow
+}
+
+export function deleteClient(id: string): void {
+    getDb().prepare("DELETE FROM clients WHERE id = ?").run(id)
 }

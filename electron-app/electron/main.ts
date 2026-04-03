@@ -4,6 +4,10 @@ import {
   createCompany,
   updateCompany,
   deleteCompany,
+  getAllClients,
+  createClient,
+  updateClient,
+  deleteClient,
 } from "./db.js"
 import { existsSync } from "node:fs"
 import path from "node:path"
@@ -86,6 +90,14 @@ app.whenReady().then(() => {
   ipcMain.handle("companies:update", (_event, data) => updateCompany(data))
 
   ipcMain.handle("companies:delete", (_event, id: string) => deleteCompany(id))
+
+  ipcMain.handle("clients:getAll", () => getAllClients())
+
+  ipcMain.handle("clients:create", (_event, data) => createClient(data))
+
+  ipcMain.handle("clients:update", (_event, data) => updateClient(data))
+
+  ipcMain.handle("clients:delete", (_event, id: string) => deleteClient(id))
 
   createMainWindow()
 
