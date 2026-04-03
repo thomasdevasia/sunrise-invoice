@@ -448,7 +448,7 @@ export default function NewInvoice() {
 
       {/* ── Line Items ── */}
       <div className="mt-10">
-        <h2 className="mb-3 text-base font-semibold">Line Items</h2>
+        <h2 className="mb-3 text-base font-semibold">Billed Items</h2>
 
         <div className="overflow-x-auto rounded-md border border-border">
           <table className="w-full text-sm">
