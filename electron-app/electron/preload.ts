@@ -61,11 +61,26 @@ export type InvoiceData = {
     billed_items: string   // JSON: { items: [...], cgst_percentage, sgst_percentage }
 }
 
+export type InvoiceFilter = {
+    page: number
+    pageSize: number
+    companyId?: string
+    clientId?: string
+    date?: string
+}
+
+export type PaginatedInvoicesResult = {
+    invoices: InvoiceData[]
+    total: number
+}
+
 const invoicesAPI = {
     getAll: (): Promise<InvoiceData[]> =>
         ipcRenderer.invoke("invoices:getAll"),
     getCount: (): Promise<number> =>
         ipcRenderer.invoke("invoices:getCount"),
+    getPaginated: (params: InvoiceFilter): Promise<PaginatedInvoicesResult> =>
+        ipcRenderer.invoke("invoices:getPaginated", params),
     create: (data: InvoiceData): Promise<InvoiceData> =>
         ipcRenderer.invoke("invoices:create", data),
     update: (data: InvoiceData): Promise<InvoiceData> =>

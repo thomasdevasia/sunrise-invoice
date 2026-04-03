@@ -128,6 +128,13 @@ export function createCompany(data: Omit<CompanyRow, never>): CompanyRow {
 }
 
 export function updateCompany(data: CompanyRow): CompanyRow {
+    const safe = {
+        ...data,
+        email_secondary:  data.email_secondary  ?? "",
+        phone_secondary:  data.phone_secondary  ?? "",
+        phone_landline:   data.phone_landline   ?? "",
+        website:          data.website          ?? "",
+    }
     getDb()
         .prepare(
             `UPDATE companies SET
@@ -144,7 +151,7 @@ export function updateCompany(data: CompanyRow): CompanyRow {
         state = @state
        WHERE id = @id`
         )
-        .run(data)
+        .run(safe)
     return getDb().prepare("SELECT * FROM companies WHERE id = ?").get(data.id) as CompanyRow
 }
 
@@ -173,6 +180,12 @@ export function createClient(data: ClientRow): ClientRow {
 }
 
 export function updateClient(data: ClientRow): ClientRow {
+    const safe = {
+        ...data,
+        email_secondary:  data.email_secondary  ?? "",
+        phone_secondary:  data.phone_secondary  ?? "",
+        phone_landline:   data.phone_landline   ?? "",
+    }
     getDb()
         .prepare(
             `UPDATE clients SET
@@ -187,7 +200,7 @@ export function updateClient(data: ClientRow): ClientRow {
         state = @state
        WHERE id = @id`
         )
-        .run(data)
+        .run(safe)
     return getDb().prepare("SELECT * FROM clients WHERE id = ?").get(data.id) as ClientRow
 }
 
@@ -208,6 +221,55 @@ export function getInvoiceCount(): number {
         .prepare("SELECT COUNT(*) as count FROM invoices")
         .get() as { count: number }
     return row.count
+}
+
+export type InvoiceFilter = {
+    page: number      // 1-indexed
+    pageSize: number  // typically 10
+    companyId?: string
+    clientId?: string
+    date?: string     // "YYYY-MM-DD" exact match
+}
+
+export type PaginatedInvoices = {
+    invoices: InvoiceRow[]
+    total: number
+}
+
+export function getInvoicesPaginated(params: InvoiceFilter): PaginatedInvoices {
+    const { page, pageSize, companyId, clientId, date } = params
+    const conditions: string[] = []
+    const bindings: unknown[] = []
+
+    if (companyId) {
+        conditions.push("company_id = ?")
+        bindings.push(companyId)
+    }
+    if (clientId) {
+        conditions.push("client_id = ?")
+        bindings.push(clientId)
+    }
+    if (date) {
+        conditions.push("invoice_date = ?")
+        bindings.push(date)
+    }
+
+    const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : ""
+    const offset = (page - 1) * pageSize
+
+    const total = (
+        getDb()
+            .prepare(`SELECT COUNT(*) as count FROM invoices ${where}`)
+            .get(...bindings) as { count: number }
+    ).count
+
+    const invoices = getDb()
+        .prepare(
+            `SELECT * FROM invoices ${where} ORDER BY invoice_date DESC, invoice_number DESC LIMIT ? OFFSET ?`
+        )
+        .all(...bindings, pageSize, offset) as InvoiceRow[]
+
+    return { invoices, total }
 }
 
 export function createInvoice(data: InvoiceRow): InvoiceRow {
