@@ -199,7 +199,7 @@ export default function Home() {
             </TableHeader>
             <TableBody>
               {invoices.map((inv) => (
-                <TableRow key={inv.id}>
+                <TableRow key={inv.id} className="group cursor-pointer" onClick={() => navigate(`/invoices/${inv.id}`)}>
                   <TableCell className="font-medium">
                     {inv.invoice_number}
                   </TableCell>
