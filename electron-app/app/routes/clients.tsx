@@ -108,7 +108,10 @@ async function fetchClients(): Promise<Client[]> {
 
 async function createClient(data: Omit<Client, "id">): Promise<Client> {
   const id = crypto.randomUUID()
-  const row = await window.electronAPI.clients.create({ ...toRow({ id, ...data }), id })
+  const row = await window.electronAPI.clients.create({
+    ...toRow({ id, ...data }),
+    id,
+  })
   return fromRow(row)
 }
 
@@ -208,11 +211,20 @@ export default function Clients() {
   const [dialogOpen, setDialogOpen] = React.useState(false)
   const [editingClient, setEditingClient] = React.useState<Client | null>(null)
   const [form, setForm] = React.useState<Omit<Client, "id">>(EMPTY_FORM)
+  const [searchInput, setSearchInput] = React.useState("")
+  const [searchQuery, setSearchQuery] = React.useState("")
 
   const { data: clients = [], isLoading } = useQuery({
     queryKey: ["clients"],
     queryFn: fetchClients,
   })
+
+  const filteredClients = React.useMemo(() => {
+    if (!searchQuery.trim()) return clients
+    return clients.filter((c) =>
+      c.name.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  }, [clients, searchQuery])
 
   const createMutation = useMutation({
     mutationFn: createClient,
@@ -493,6 +505,33 @@ export default function Clients() {
         </Button>
       </div>
 
+      {/* Search */}
+      {!isLoading && clients.length > 0 && (
+        <div className="flex gap-2">
+          <Input
+            placeholder="Search by name…"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && setSearchQuery(searchInput)}
+            className="max-w-sm"
+          />
+          <Button variant="outline" onClick={() => setSearchQuery(searchInput)}>
+            Search
+          </Button>
+          {searchQuery && (
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setSearchInput("")
+                setSearchQuery("")
+              }}
+            >
+              Clear
+            </Button>
+          )}
+        </div>
+      )}
+
       {/* Content */}
       {isLoading ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -533,9 +572,21 @@ export default function Clients() {
             </Button>
           </EmptyContent>
         </Empty>
+      ) : filteredClients.length === 0 ? (
+        <Empty className="flex-1 border border-dashed">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <Users />
+            </EmptyMedia>
+            <EmptyTitle>No Results</EmptyTitle>
+            <EmptyDescription>
+              No clients match &ldquo;{searchQuery}&rdquo;.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {clients.map((client) => (
+          {filteredClients.map((client) => (
             <ClientCard
               key={client.id}
               client={client}
