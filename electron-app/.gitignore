@@ -6,3 +6,6 @@
 /.react-router/
 /build/
 /dist-electron/
+
+# dist-electron-builder
+/dist/
