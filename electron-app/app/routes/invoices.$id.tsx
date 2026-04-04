@@ -6,6 +6,7 @@ import {
   BuildingIcon,
   CalendarIcon,
   DownloadIcon,
+  EyeIcon,
   PlusIcon,
   Trash2Icon,
   UserIcon,
@@ -28,6 +29,12 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import {
   Combobox,
   ComboboxContent,
@@ -307,6 +314,15 @@ export default function EditInvoice() {
   const [saving, setSaving] = React.useState(false)
   const [deleting, setDeleting] = React.useState(false)
   const [downloading, setDownloading] = React.useState(false)
+  const [pdfUrl, setPdfUrl] = React.useState<string | null>(null)
+  const [pdfOpen, setPdfOpen] = React.useState(false)
+
+  React.useEffect(() => {
+    if (!pdfOpen && pdfUrl) {
+      URL.revokeObjectURL(pdfUrl)
+      setPdfUrl(null)
+    }
+  }, [pdfOpen])
 
   async function handleUpdate() {
     if (!selectedCompanyId) {
@@ -357,6 +373,32 @@ export default function EditInvoice() {
       )
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleViewPdf() {
+    if (!selectedCompany || !selectedClient) {
+      toast.error("Please select a company and client before viewing.")
+      return
+    }
+    try {
+      const props: InvoicePDFProps = {
+        company: selectedCompany,
+        client: selectedClient,
+        invoiceNumber,
+        invoiceDate,
+        lineItems,
+        cgstPct,
+        sgstPct,
+      }
+      const blob = await pdf(<InvoicePDFDocument {...props} />).toBlob()
+      const url = URL.createObjectURL(blob)
+      setPdfUrl(url)
+      setPdfOpen(true)
+    } catch (err: unknown) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to generate PDF preview."
+      )
     }
   }
 
@@ -470,6 +512,15 @@ export default function EditInvoice() {
 
         {/* Actions */}
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleViewPdf}
+            disabled={downloading || saving || deleting}
+          >
+            <EyeIcon className="mr-1.5 size-3.5" />
+            View as PDF
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -812,6 +863,25 @@ export default function EditInvoice() {
           {saving ? "Saving…" : "Update Invoice"}
         </Button>
       </div>
+
+      {/* ── PDF Preview Dialog ── */}
+      <Dialog open={pdfOpen} onOpenChange={setPdfOpen}>
+        <DialogContent
+          className="w-[95vw] max-w-[95vw] sm:max-w-[95vw] h-[95vh] flex flex-col gap-3"
+          showCloseButton
+        >
+          <DialogHeader>
+            <DialogTitle>{invoiceNumber}</DialogTitle>
+          </DialogHeader>
+          {pdfUrl && (
+            <iframe
+              src={pdfUrl}
+              className="w-full flex-1 rounded border-0"
+              title="Invoice PDF Preview"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
