@@ -91,6 +91,8 @@ const invoicesAPI = {
         ipcRenderer.invoke("invoices:update", data),
     delete: (id: string): Promise<void> =>
         ipcRenderer.invoke("invoices:delete", id),
+    savePdf: (data: { defaultName: string; buffer: ArrayBuffer }): Promise<{ success: boolean; filePath?: string }> =>
+        ipcRenderer.invoke("invoices:savePdf", data),
 }
 
 contextBridge.exposeInMainWorld("electronAPI", {

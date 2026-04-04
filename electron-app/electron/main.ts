@@ -1,4 +1,5 @@
-import { app, BrowserWindow, ipcMain } from "electron"
+import { app, BrowserWindow, dialog, ipcMain } from "electron"
+import { writeFile } from "node:fs/promises"
 import {
   getAllCompanies,
   createCompany,
@@ -122,6 +123,22 @@ app.whenReady().then(() => {
   ipcMain.handle("invoices:update", (_event, data) => updateInvoice(data))
 
   ipcMain.handle("invoices:delete", (_event, id: string) => deleteInvoice(id))
+
+  ipcMain.handle(
+    "invoices:savePdf",
+    async (_event, data: { defaultName: string; buffer: ArrayBuffer }) => {
+      const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
+      const result = await dialog.showSaveDialog(win, {
+        defaultPath: data.defaultName,
+        filters: [{ name: "PDF Files", extensions: ["pdf"] }],
+      })
+      if (result.canceled || !result.filePath) {
+        return { success: false }
+      }
+      await writeFile(result.filePath, Buffer.from(data.buffer))
+      return { success: true, filePath: result.filePath }
+    },
+  )
 
   createMainWindow()
 

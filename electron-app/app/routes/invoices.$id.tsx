@@ -5,10 +5,14 @@ import {
   ArrowLeftIcon,
   BuildingIcon,
   CalendarIcon,
+  DownloadIcon,
   PlusIcon,
   Trash2Icon,
   UserIcon,
 } from "lucide-react"
+import { pdf } from "@react-pdf/renderer"
+import type { InvoicePDFProps } from "@/components/invoice-pdf"
+import { InvoicePDFDocument } from "@/components/invoice-pdf"
 import { toast } from "sonner"
 
 import {
@@ -302,6 +306,7 @@ export default function EditInvoice() {
   const queryClient = useQueryClient()
   const [saving, setSaving] = React.useState(false)
   const [deleting, setDeleting] = React.useState(false)
+  const [downloading, setDownloading] = React.useState(false)
 
   async function handleUpdate() {
     if (!selectedCompanyId) {
@@ -352,6 +357,41 @@ export default function EditInvoice() {
       )
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleDownload() {
+    if (!selectedCompany || !selectedClient) {
+      toast.error("Please select a company and client before downloading.")
+      return
+    }
+
+    setDownloading(true)
+    try {
+      const props: InvoicePDFProps = {
+        company: selectedCompany,
+        client: selectedClient,
+        invoiceNumber,
+        invoiceDate,
+        lineItems,
+        cgstPct,
+        sgstPct,
+      }
+      const blob = await pdf(<InvoicePDFDocument {...props} />).toBlob()
+      const buffer = await blob.arrayBuffer()
+      const result = await window.electronAPI.invoices.savePdf({
+        defaultName: `${invoiceNumber}.pdf`,
+        buffer,
+      })
+      if (result.success) {
+        toast.success("Invoice downloaded.")
+      }
+    } catch (err: unknown) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to generate PDF."
+      )
+    } finally {
+      setDownloading(false)
     }
   }
 
@@ -428,37 +468,50 @@ export default function EditInvoice() {
           </h1>
         </div>
 
-        {/* Delete */}
-        <AlertDialog>
-          <AlertDialogTrigger
-            render={
-              <Button variant="destructive" size="sm" disabled={deleting} />
-            }
+        {/* Actions */}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownload}
+            disabled={downloading || saving || deleting}
           >
-            <Trash2Icon className="mr-1.5 size-3.5" />
-            Delete Invoice
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete invoice?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This will permanently delete invoice{" "}
-                <strong>{invoice.invoice_number}</strong>. This action cannot be
-                undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                variant="destructive"
-                onClick={handleDelete}
-                disabled={deleting}
-              >
-                {deleting ? "Deleting…" : "Delete"}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+            <DownloadIcon className="mr-1.5 size-3.5" />
+            {downloading ? "Preparing…" : "Download Invoice"}
+          </Button>
+
+          {/* Delete */}
+          <AlertDialog>
+            <AlertDialogTrigger
+              render={
+                <Button variant="destructive" size="sm" disabled={deleting} />
+              }
+            >
+              <Trash2Icon className="mr-1.5 size-3.5" />
+              Delete Invoice
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete invoice?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete invoice{" "}
+                  <strong>{invoice.invoice_number}</strong>. This action cannot
+                  be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  variant="destructive"
+                  onClick={handleDelete}
+                  disabled={deleting}
+                >
+                  {deleting ? "Deleting…" : "Delete"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </div>
 
       {/* ── Company + Client / Number + Date grid ── */}
