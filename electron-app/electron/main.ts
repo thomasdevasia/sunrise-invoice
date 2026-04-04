@@ -9,6 +9,7 @@ import {
   updateClient,
   deleteClient,
   getAllInvoices,
+  getInvoiceById,
   getInvoiceCount,
   getInvoicesPaginated,
   createInvoice,
@@ -106,6 +107,8 @@ app.whenReady().then(() => {
   ipcMain.handle("clients:delete", (_event, id: string) => deleteClient(id))
 
   ipcMain.handle("invoices:getAll", () => getAllInvoices())
+
+  ipcMain.handle("invoices:getById", (_event, id: string) => getInvoiceById(id))
 
   ipcMain.handle("invoices:getCount", () => getInvoiceCount())
 

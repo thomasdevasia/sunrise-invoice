@@ -214,6 +214,12 @@ export function getInvoiceCount(): number {
     return row.count
 }
 
+export function getInvoiceById(id: string): InvoiceRow | undefined {
+    return getDb()
+        .prepare("SELECT * FROM invoices WHERE id = ?")
+        .get(id) as InvoiceRow | undefined
+}
+
 export type InvoiceFilter = {
     page: number      // 1-indexed
     pageSize: number  // typically 10

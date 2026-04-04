@@ -77,6 +77,8 @@ export type PaginatedInvoicesResult = {
 const invoicesAPI = {
     getAll: (): Promise<InvoiceData[]> =>
         ipcRenderer.invoke("invoices:getAll"),
+    getById: (id: string): Promise<InvoiceData | undefined> =>
+        ipcRenderer.invoke("invoices:getById", id),
     getCount: (): Promise<number> =>
         ipcRenderer.invoke("invoices:getCount"),
     getPaginated: (params: InvoiceFilter): Promise<PaginatedInvoicesResult> =>

@@ -48,10 +48,15 @@ import {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Company = { id: string; name: string; gstin: string }
-type Client  = { id: string; name: string; gstin: string }
+type Client = { id: string; name: string; gstin: string }
 
 type BilledItems = {
-  items: { description: string; quantity: number; rate: number; amount: number }[]
+  items: {
+    description: string
+    quantity: number
+    rate: number
+    amount: number
+  }[]
   cgst_percentage: number
   sgst_percentage: number
 }
@@ -83,7 +88,7 @@ function formatDate(iso: string): string {
   if (!iso) return "—"
   try {
     const [y, m, d] = iso.split("-")
-    return `${d} ${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][parseInt(m,10)-1]} ${y}`
+    return `${d} ${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][parseInt(m, 10) - 1]} ${y}`
   } catch {
     return iso
   }
@@ -132,11 +137,21 @@ function SkeletonRows() {
     <>
       {Array.from({ length: PAGE_SIZE }).map((_, i) => (
         <TableRow key={i}>
-          <TableCell><Skeleton className="h-4 w-28" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-36" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-          <TableCell className="text-right"><Skeleton className="ml-auto h-4 w-20" /></TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-28" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-24" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-36" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-32" />
+          </TableCell>
+          <TableCell className="text-right">
+            <Skeleton className="ml-auto h-4 w-20" />
+          </TableCell>
         </TableRow>
       ))}
     </>
@@ -164,15 +179,21 @@ export default function Invoices() {
   const navigate = useNavigate()
 
   // ── Filter draft state (what the user is selecting) ──
-  const [draftCompanyId, setDraftCompanyId] = React.useState<string | null>(null)
-  const [draftClientId, setDraftClientId]   = React.useState<string | null>(null)
-  const [draftDate, setDraftDate]           = React.useState<string>("")
+  const [draftCompanyId, setDraftCompanyId] = React.useState<string | null>(
+    null
+  )
+  const [draftClientId, setDraftClientId] = React.useState<string | null>(null)
+  const [draftDate, setDraftDate] = React.useState<string>("")
 
   // ── Committed filter state (what the last Search used) ──
-  const [committedCompanyId, setCommittedCompanyId] = React.useState<string | null>(null)
-  const [committedClientId, setCommittedClientId]   = React.useState<string | null>(null)
-  const [committedDate, setCommittedDate]           = React.useState<string>("")
-  const [page, setPage]                             = React.useState(1)
+  const [committedCompanyId, setCommittedCompanyId] = React.useState<
+    string | null
+  >(null)
+  const [committedClientId, setCommittedClientId] = React.useState<
+    string | null
+  >(null)
+  const [committedDate, setCommittedDate] = React.useState<string>("")
+  const [page, setPage] = React.useState(1)
 
   // ── Load companies + clients for comboboxes ──
   const { data: companies = [] } = useQuery({
@@ -187,7 +208,13 @@ export default function Invoices() {
 
   // ── Main invoice query ──
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ["invoices", page, committedCompanyId, committedClientId, committedDate],
+    queryKey: [
+      "invoices",
+      page,
+      committedCompanyId,
+      committedClientId,
+      committedDate,
+    ],
     queryFn: () =>
       fetchInvoices({
         page,
@@ -198,8 +225,8 @@ export default function Invoices() {
     placeholderData: (prev) => prev,
   })
 
-  const invoices  = data?.invoices ?? []
-  const total     = data?.total    ?? 0
+  const invoices = data?.invoices ?? []
+  const total = data?.total ?? 0
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
   // ── Lookup maps ──
@@ -229,7 +256,11 @@ export default function Invoices() {
     setPage(1)
   }
 
-  const hasActiveFilters = !!(committedCompanyId || committedClientId || committedDate)
+  const hasActiveFilters = !!(
+    committedCompanyId ||
+    committedClientId ||
+    committedDate
+  )
   const loading = isLoading || isFetching
 
   return (
@@ -253,13 +284,17 @@ export default function Invoices() {
       {/* ── Filter Bar ── */}
       <div className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-muted/30 p-3">
         {/* Company combobox */}
-        <div className="flex min-w-[180px] flex-1 flex-col gap-1">
-          <label className="text-xs font-medium text-muted-foreground">Company</label>
+        <div className="flex min-w-45 flex-1 flex-col gap-1">
+          <label className="text-xs font-medium text-muted-foreground">
+            Company
+          </label>
           <Combobox
             value={draftCompanyId}
             onValueChange={(val) => setDraftCompanyId(val as string | null)}
             items={companies.map((c) => c.id)}
-            itemToStringLabel={(id) => companies.find((c) => c.id === id)?.name ?? ""}
+            itemToStringLabel={(id) =>
+              companies.find((c) => c.id === id)?.name ?? ""
+            }
           >
             <ComboboxInput
               className="w-full"
@@ -273,7 +308,9 @@ export default function Invoices() {
                   <ComboboxItem key={company.id} value={company.id}>
                     <span className="font-medium">{company.name}</span>
                     {company.gstin && (
-                      <span className="ml-1 text-muted-foreground">({company.gstin})</span>
+                      <span className="ml-1 text-muted-foreground">
+                        ({company.gstin})
+                      </span>
                     )}
                   </ComboboxItem>
                 ))}
@@ -283,13 +320,17 @@ export default function Invoices() {
         </div>
 
         {/* Client combobox */}
-        <div className="flex min-w-[180px] flex-1 flex-col gap-1">
-          <label className="text-xs font-medium text-muted-foreground">Client</label>
+        <div className="flex min-w-45 flex-1 flex-col gap-1">
+          <label className="text-xs font-medium text-muted-foreground">
+            Client
+          </label>
           <Combobox
             value={draftClientId}
             onValueChange={(val) => setDraftClientId(val as string | null)}
             items={clients.map((c) => c.id)}
-            itemToStringLabel={(id) => clients.find((c) => c.id === id)?.name ?? ""}
+            itemToStringLabel={(id) =>
+              clients.find((c) => c.id === id)?.name ?? ""
+            }
           >
             <ComboboxInput
               className="w-full"
@@ -303,7 +344,9 @@ export default function Invoices() {
                   <ComboboxItem key={client.id} value={client.id}>
                     <span className="font-medium">{client.name}</span>
                     {client.gstin && (
-                      <span className="ml-1 text-muted-foreground">({client.gstin})</span>
+                      <span className="ml-1 text-muted-foreground">
+                        ({client.gstin})
+                      </span>
                     )}
                   </ComboboxItem>
                 ))}
@@ -314,7 +357,9 @@ export default function Invoices() {
 
         {/* Date filter */}
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-muted-foreground">Date</label>
+          <label className="text-xs font-medium text-muted-foreground">
+            Date
+          </label>
           <Input
             type="date"
             value={draftDate}
@@ -330,7 +375,12 @@ export default function Invoices() {
             Search
           </Button>
           {hasActiveFilters && (
-            <Button variant="ghost" size="icon" onClick={handleClear} title="Clear filters">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleClear}
+              title="Clear filters"
+            >
               <XCircleIcon className="size-4" />
             </Button>
           )}
@@ -387,7 +437,9 @@ export default function Invoices() {
           </EmptyContent>
         </Empty>
       ) : (
-        <div className={`flex flex-col gap-4 transition-opacity duration-150 ${isFetching ? "opacity-60" : "opacity-100"}`}>
+        <div
+          className={`flex flex-col gap-4 transition-opacity duration-150 ${isFetching ? "opacity-60" : "opacity-100"}`}
+        >
           <div className="rounded-lg border border-border">
             <Table>
               <TableHeader>
@@ -405,24 +457,28 @@ export default function Invoices() {
                 ) : (
                   invoices.map((inv: InvoiceRow) => {
                     const company = companyMap[inv.company_id]
-                    const client  = clientMap[inv.client_id]
-                    const total   = grandTotal(inv.billed_items)
+                    const client = clientMap[inv.client_id]
+                    const total = grandTotal(inv.billed_items)
                     return (
-                      <TableRow key={inv.id} className="group">
+                      <TableRow key={inv.id} className="group cursor-pointer" onClick={() => navigate(`/invoices/${inv.id}`)}>
                         <TableCell className="font-mono text-sm font-medium">
                           {inv.invoice_number}
                         </TableCell>
-                        <TableCell className="text-muted-foreground text-sm">
+                        <TableCell className="text-sm text-muted-foreground">
                           {formatDate(inv.invoice_date)}
                         </TableCell>
                         <TableCell className="text-sm">
                           {company?.name ?? (
-                            <span className="text-muted-foreground italic">Unknown</span>
+                            <span className="text-muted-foreground italic">
+                              Unknown
+                            </span>
                           )}
                         </TableCell>
                         <TableCell className="text-sm">
                           {client?.name ?? (
-                            <span className="text-muted-foreground italic">Unknown</span>
+                            <span className="text-muted-foreground italic">
+                              Unknown
+                            </span>
                           )}
                         </TableCell>
                         <TableCell className="text-right font-mono text-sm">
@@ -444,7 +500,11 @@ export default function Invoices() {
                   <PaginationPrevious
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     aria-disabled={page === 1}
-                    className={page === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    className={
+                      page === 1
+                        ? "pointer-events-none opacity-50"
+                        : "cursor-pointer"
+                    }
                   />
                 </PaginationItem>
 
@@ -470,7 +530,11 @@ export default function Invoices() {
                   <PaginationNext
                     onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                     aria-disabled={page === totalPages}
-                    className={page === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    className={
+                      page === totalPages
+                        ? "pointer-events-none opacity-50"
+                        : "cursor-pointer"
+                    }
                   />
                 </PaginationItem>
               </PaginationContent>

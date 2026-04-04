@@ -1,27 +1,40 @@
 import * as React from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { useNavigate } from "react-router"
+import { useNavigate, useParams } from "react-router"
 import {
+  ArrowLeftIcon,
   BuildingIcon,
-  UserIcon,
   CalendarIcon,
   PlusIcon,
   Trash2Icon,
+  UserIcon,
 } from "lucide-react"
+import { toast } from "sonner"
 
 import {
-  Combobox,
-  ComboboxInput,
-  ComboboxContent,
-  ComboboxList,
-  ComboboxItem,
-  ComboboxEmpty,
-} from "@/components/ui/combobox"
-import { Input } from "@/components/ui/input"
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
-import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox"
+import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
+import { Skeleton } from "@/components/ui/skeleton"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -51,6 +64,17 @@ type Client = {
   gstin: string
   address: string
   state: string
+}
+
+type BilledItems = {
+  items: {
+    description: string
+    quantity: number
+    rate: number
+    amount: number
+  }[]
+  cgst_percentage: number
+  sgst_percentage: number
 }
 
 // ─── IPC helpers ─────────────────────────────────────────────────────────────
@@ -92,44 +116,11 @@ function clientFromRow(
 }
 
 async function fetchCompanies(): Promise<Company[]> {
-  const rows = await window.electronAPI.companies.getAll()
-  return rows.map(companyFromRow)
+  return (await window.electronAPI.companies.getAll()).map(companyFromRow)
 }
 
 async function fetchClients(): Promise<Client[]> {
-  const rows = await window.electronAPI.clients.getAll()
-  return rows.map(clientFromRow)
-}
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function getFinancialYear(): string {
-  const now = new Date()
-  const year = now.getFullYear()
-  const month = now.getMonth() + 1 // 1-indexed
-  if (month >= 4) {
-    return `${year}-${String(year + 1).slice(-2)}`
-  }
-  return `${year - 1}-${String(year).slice(-2)}`
-}
-
-function getInitials(name: string): string {
-  return name
-    .trim()
-    .split(/\s+/)
-    .map((word) => word[0])
-    .join("")
-    .toUpperCase()
-}
-
-function buildInvoiceNumber(
-  count: number,
-  companyName: string,
-  fy: string
-): string {
-  const paddedCount = String(count).padStart(3, "0")
-  const initials = getInitials(companyName)
-  return `${paddedCount}/${initials}/${fy}`
+  return (await window.electronAPI.clients.getAll()).map(clientFromRow)
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -186,9 +177,11 @@ function EntityDetails({
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function NewInvoice() {
-  const fy = React.useMemo(() => getFinancialYear(), [])
+export default function EditInvoice() {
+  const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
 
+  // ── Data queries ──
   const { data: companies = [], isLoading: companiesLoading } = useQuery({
     queryKey: ["companies"],
     queryFn: fetchCompanies,
@@ -199,6 +192,17 @@ export default function NewInvoice() {
     queryFn: fetchClients,
   })
 
+  const {
+    data: invoice,
+    isLoading: invoiceLoading,
+    isError: invoiceError,
+  } = useQuery({
+    queryKey: ["invoice", id],
+    queryFn: () => window.electronAPI.invoices.getById(id!),
+    enabled: !!id,
+  })
+
+  // ── Form state ──
   const [selectedCompanyId, setSelectedCompanyId] = React.useState<
     string | null
   >(null)
@@ -218,7 +222,61 @@ export default function NewInvoice() {
   const [lineItems, setLineItems] = React.useState<LineItem[]>([
     { id: crypto.randomUUID(), description: "", quantity: "", rate: "" },
   ])
+  const [cgstPct, setCgstPct] = React.useState("")
+  const [sgstPct, setSgstPct] = React.useState("")
 
+  // ── Seed form from loaded invoice ──
+  const [seeded, setSeeded] = React.useState(false)
+  React.useEffect(() => {
+    if (!invoice || seeded) return
+    setSelectedCompanyId(invoice.company_id)
+    setSelectedClientId(invoice.client_id)
+    setInvoiceNumber(invoice.invoice_number)
+    if (invoice.invoice_date) {
+      const [y, m, d] = invoice.invoice_date.split("-").map(Number)
+      setInvoiceDate(new Date(y, m - 1, d))
+    }
+    try {
+      const parsed = JSON.parse(invoice.billed_items) as BilledItems
+      setLineItems(
+        parsed.items.map((item) => ({
+          id: crypto.randomUUID(),
+          description: item.description,
+          quantity: String(item.quantity),
+          rate: String(item.rate),
+        }))
+      )
+      setCgstPct(
+        parsed.cgst_percentage > 0 ? String(parsed.cgst_percentage) : ""
+      )
+      setSgstPct(
+        parsed.sgst_percentage > 0 ? String(parsed.sgst_percentage) : ""
+      )
+    } catch {
+      // leave defaults
+    }
+    setSeeded(true)
+  }, [invoice, seeded])
+
+  // ── Derived ──
+  const subtotal = lineItems.reduce(
+    (sum, r) => sum + (parseFloat(r.quantity) || 0) * (parseFloat(r.rate) || 0),
+    0
+  )
+  const cgstAmt = subtotal * ((parseFloat(cgstPct) || 0) / 100)
+  const sgstAmt = subtotal * ((parseFloat(sgstPct) || 0) / 100)
+  const grandTotal = subtotal + cgstAmt + sgstAmt
+
+  const selectedCompany = React.useMemo(
+    () => companies.find((c) => c.id === selectedCompanyId),
+    [companies, selectedCompanyId]
+  )
+  const selectedClient = React.useMemo(
+    () => clients.find((c) => c.id === selectedClientId),
+    [clients, selectedClientId]
+  )
+
+  // ── Line item helpers ──
   function addRow() {
     setLineItems((prev) => [
       ...prev,
@@ -226,73 +284,39 @@ export default function NewInvoice() {
     ])
   }
 
-  function removeRow(id: string) {
-    setLineItems((prev) => prev.filter((r) => r.id !== id))
+  function removeRow(rowId: string) {
+    setLineItems((prev) => prev.filter((r) => r.id !== rowId))
   }
 
   function updateRow(
-    id: string,
+    rowId: string,
     field: keyof Omit<LineItem, "id">,
     value: string
   ) {
     setLineItems((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, [field]: value } : r))
+      prev.map((r) => (r.id === rowId ? { ...r, [field]: value } : r))
     )
   }
 
-  const subtotal = lineItems.reduce((sum, r) => {
-    return sum + (parseFloat(r.quantity) || 0) * (parseFloat(r.rate) || 0)
-  }, 0)
-
-  const [cgstPct, setCgstPct] = React.useState("")
-  const [sgstPct, setSgstPct] = React.useState("")
-
-  const cgstAmt = subtotal * ((parseFloat(cgstPct) || 0) / 100)
-  const sgstAmt = subtotal * ((parseFloat(sgstPct) || 0) / 100)
-  const grandTotal = subtotal + cgstAmt + sgstAmt
-
-  const selectedCompany: Company | undefined = React.useMemo(
-    () => companies.find((c) => c.id === selectedCompanyId),
-    [companies, selectedCompanyId]
-  )
-
-  const selectedClient: Client | undefined = React.useMemo(
-    () => clients.find((c) => c.id === selectedClientId),
-    [clients, selectedClientId]
-  )
-
-  // Auto-generate invoice number when company changes.
-  // Uses live count from the DB so the number is always correct.
-  React.useEffect(() => {
-    if (!selectedCompany) {
-      setInvoiceNumber("")
-      return
-    }
-    void window.electronAPI.invoices.getCount().then((count) => {
-      setInvoiceNumber(buildInvoiceNumber(count + 1, selectedCompany.name, fy))
-    })
-  }, [selectedCompany, fy])
-
-  const navigate = useNavigate()
+  // ── Actions ──
   const queryClient = useQueryClient()
   const [saving, setSaving] = React.useState(false)
-  const [saveError, setSaveError] = React.useState<string | null>(null)
+  const [deleting, setDeleting] = React.useState(false)
 
-  async function handleCreate() {
+  async function handleUpdate() {
     if (!selectedCompanyId) {
-      setSaveError("Please select a company.")
+      toast.error("Please select a company.")
       return
     }
     if (!selectedClientId) {
-      setSaveError("Please select a client.")
+      toast.error("Please select a client.")
       return
     }
     if (!invoiceNumber.trim()) {
-      setSaveError("Invoice number is required.")
+      toast.error("Invoice number is required.")
       return
     }
 
-    setSaveError(null)
     setSaving(true)
     try {
       const billedItems = JSON.stringify({
@@ -306,8 +330,8 @@ export default function NewInvoice() {
         sgst_percentage: parseFloat(sgstPct) || 0,
       })
 
-      await window.electronAPI.invoices.create({
-        id: crypto.randomUUID(),
+      await window.electronAPI.invoices.update({
+        id: id!,
         company_id: selectedCompanyId,
         client_id: selectedClientId,
         invoice_number: invoiceNumber.trim(),
@@ -316,158 +340,218 @@ export default function NewInvoice() {
       })
 
       await queryClient.invalidateQueries({ queryKey: ["invoices"] })
+      await queryClient.invalidateQueries({ queryKey: ["invoice", id] })
+      toast.success("Invoice updated.")
       void navigate("/invoices")
     } catch (err: unknown) {
-      setSaveError(
-        err instanceof Error ? err.message : "Failed to save invoice."
+      toast.error(
+        err instanceof Error ? err.message : "Failed to update invoice."
       )
     } finally {
       setSaving(false)
     }
   }
 
+  async function handleDelete() {
+    setDeleting(true)
+    try {
+      await window.electronAPI.invoices.delete(id!)
+      await queryClient.invalidateQueries({ queryKey: ["invoices"] })
+      toast.success("Invoice deleted.")
+      void navigate("/invoices")
+    } catch (err: unknown) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to delete invoice."
+      )
+      setDeleting(false)
+    }
+  }
+
+  // ── Loading / error states ──
+  const pageLoading = invoiceLoading || companiesLoading || clientsLoading
+
+  if (pageLoading) {
+    return (
+      <div className="mx-auto max-w-5xl px-4 py-8">
+        <Skeleton className="mb-8 h-8 w-48" />
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          <div className="flex flex-col gap-6">
+            <Skeleton className="h-9 w-full" />
+            <Skeleton className="h-9 w-full" />
+          </div>
+          <div className="flex flex-col gap-6">
+            <Skeleton className="h-9 w-full" />
+            <Skeleton className="h-9 w-full" />
+          </div>
+        </div>
+        <Skeleton className="mt-10 h-40 w-full" />
+      </div>
+    )
+  }
+
+  if (!invoice || invoiceError) {
+    return (
+      <div className="mx-auto max-w-5xl px-4 py-8">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="mb-6 -ml-2"
+          onClick={() => navigate("/invoices")}
+        >
+          <ArrowLeftIcon className="mr-1.5 size-3.5" />
+          Back to Invoices
+        </Button>
+        <p className="text-sm text-muted-foreground">Invoice not found.</p>
+      </div>
+    )
+  }
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
-      <h1 className="mb-8 text-2xl font-semibold tracking-tight">
-        Create Invoice
-      </h1>
+      {/* ── Header ── */}
+      <div className="mb-8 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="-ml-2"
+            onClick={() => navigate("/invoices")}
+          >
+            <ArrowLeftIcon className="mr-1.5 size-3.5" />
+            Back
+          </Button>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {invoice.invoice_number}
+          </h1>
+        </div>
 
+        {/* Delete */}
+        <AlertDialog>
+          <AlertDialogTrigger
+            render={
+              <Button variant="destructive" size="sm" disabled={deleting} />
+            }
+          >
+            <Trash2Icon className="mr-1.5 size-3.5" />
+            Delete Invoice
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete invoice?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete invoice{" "}
+                <strong>{invoice.invoice_number}</strong>. This action cannot be
+                undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                variant="destructive"
+                onClick={handleDelete}
+                disabled={deleting}
+              >
+                {deleting ? "Deleting…" : "Delete"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+
+      {/* ── Company + Client / Number + Date grid ── */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-        {/* ── Grid 1: Company + Client ── */}
+        {/* Grid 1: Company + Client */}
         <div className="flex flex-col gap-6">
-          {/* ── Company ── */}
+          {/* Company */}
           <div>
             <FieldLabel>My Company</FieldLabel>
-            {companiesLoading ? (
-              <Skeleton className="h-9 w-full rounded-md" />
-            ) : companies.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                No companies found.{" "}
-                <a
-                  href="/company"
-                  className="underline underline-offset-2 hover:text-foreground"
-                >
-                  Add a company first.
-                </a>
-              </p>
-            ) : (
-              <>
-                <Combobox
-                  value={selectedCompanyId}
-                  onValueChange={(val) =>
-                    setSelectedCompanyId(val as string | null)
-                  }
-                  items={companies.map((c) => c.id)}
-                  itemToStringLabel={(id) =>
-                    companies.find((c) => c.id === id)?.name ?? ""
-                  }
-                >
-                  <ComboboxInput
-                    className="w-full"
-                    placeholder="Search company…"
-                    showClear={!!selectedCompanyId}
-                  />
-                  <ComboboxContent>
-                    <ComboboxList>
-                      <ComboboxEmpty>No companies found.</ComboboxEmpty>
-                      {companies.map((company) => (
-                        <ComboboxItem key={company.id} value={company.id}>
-                          <span className="font-medium">{company.name}</span>
-                          {company.gstin && (
-                            <span className="ml-1 text-muted-foreground">
-                              ({company.gstin})
-                            </span>
-                          )}
-                        </ComboboxItem>
-                      ))}
-                    </ComboboxList>
-                  </ComboboxContent>
-                </Combobox>
-                {selectedCompany && (
-                  <EntityDetails icon={BuildingIcon} entity={selectedCompany} />
-                )}
-              </>
+            <Combobox
+              value={selectedCompanyId}
+              onValueChange={(val) =>
+                setSelectedCompanyId(val as string | null)
+              }
+              items={companies.map((c) => c.id)}
+              itemToStringLabel={(id) =>
+                companies.find((c) => c.id === id)?.name ?? ""
+              }
+            >
+              <ComboboxInput
+                className="w-full"
+                placeholder="Search company…"
+                showClear={!!selectedCompanyId}
+              />
+              <ComboboxContent>
+                <ComboboxList>
+                  <ComboboxEmpty>No companies found.</ComboboxEmpty>
+                  {companies.map((company) => (
+                    <ComboboxItem key={company.id} value={company.id}>
+                      <span className="font-medium">{company.name}</span>
+                      {company.gstin && (
+                        <span className="ml-1 text-muted-foreground">
+                          ({company.gstin})
+                        </span>
+                      )}
+                    </ComboboxItem>
+                  ))}
+                </ComboboxList>
+              </ComboboxContent>
+            </Combobox>
+            {selectedCompany && (
+              <EntityDetails icon={BuildingIcon} entity={selectedCompany} />
             )}
           </div>
 
-          {/* ── Client ── */}
+          {/* Client */}
           <div>
             <FieldLabel>Client</FieldLabel>
-            {clientsLoading ? (
-              <Skeleton className="h-9 w-full rounded-md" />
-            ) : clients.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                No clients found.{" "}
-                <a
-                  href="/clients"
-                  className="underline underline-offset-2 hover:text-foreground"
-                >
-                  Add a client first.
-                </a>
-              </p>
-            ) : (
-              <>
-                <Combobox
-                  value={selectedClientId}
-                  onValueChange={(val) =>
-                    setSelectedClientId(val as string | null)
-                  }
-                  items={clients.map((c) => c.id)}
-                  itemToStringLabel={(id) =>
-                    clients.find((c) => c.id === id)?.name ?? ""
-                  }
-                >
-                  <ComboboxInput
-                    className="w-full"
-                    placeholder="Search client…"
-                    showClear={!!selectedClientId}
-                  />
-                  <ComboboxContent>
-                    <ComboboxList>
-                      <ComboboxEmpty>No clients found.</ComboboxEmpty>
-                      {clients.map((client) => (
-                        <ComboboxItem key={client.id} value={client.id}>
-                          <span className="font-medium">{client.name}</span>
-                          {client.gstin && (
-                            <span className="ml-1 text-muted-foreground">
-                              ({client.gstin})
-                            </span>
-                          )}
-                        </ComboboxItem>
-                      ))}
-                    </ComboboxList>
-                  </ComboboxContent>
-                </Combobox>
-                {selectedClient && (
-                  <EntityDetails icon={UserIcon} entity={selectedClient} />
-                )}
-              </>
+            <Combobox
+              value={selectedClientId}
+              onValueChange={(val) => setSelectedClientId(val as string | null)}
+              items={clients.map((c) => c.id)}
+              itemToStringLabel={(id) =>
+                clients.find((c) => c.id === id)?.name ?? ""
+              }
+            >
+              <ComboboxInput
+                className="w-full"
+                placeholder="Search client…"
+                showClear={!!selectedClientId}
+              />
+              <ComboboxContent>
+                <ComboboxList>
+                  <ComboboxEmpty>No clients found.</ComboboxEmpty>
+                  {clients.map((client) => (
+                    <ComboboxItem key={client.id} value={client.id}>
+                      <span className="font-medium">{client.name}</span>
+                      {client.gstin && (
+                        <span className="ml-1 text-muted-foreground">
+                          ({client.gstin})
+                        </span>
+                      )}
+                    </ComboboxItem>
+                  ))}
+                </ComboboxList>
+              </ComboboxContent>
+            </Combobox>
+            {selectedClient && (
+              <EntityDetails icon={UserIcon} entity={selectedClient} />
             )}
           </div>
         </div>
-        {/* ── end Grid 1 ── */}
 
-        {/* ── Grid 2: Invoice Number + Date ── */}
+        {/* Grid 2: Invoice Number + Date */}
         <div className="flex flex-col gap-6">
-          {/* ── Invoice Number ── */}
+          {/* Invoice Number */}
           <div>
             <FieldLabel>Invoice Number</FieldLabel>
             <Input
               value={invoiceNumber}
               onChange={(e) => setInvoiceNumber(e.target.value)}
-              placeholder={
-                selectedCompany ? "" : "Select a company to auto-generate"
-              }
               className="font-mono"
             />
-            {selectedCompany && (
-              <p className="mt-1.5 text-xs text-muted-foreground">
-                Auto-generated · you can edit this
-              </p>
-            )}
           </div>
 
-          {/* ── Invoice Date ── */}
+          {/* Invoice Date */}
           <div>
             <FieldLabel>Invoice Date</FieldLabel>
             <div className="relative">
@@ -499,7 +583,6 @@ export default function NewInvoice() {
             </div>
           </div>
         </div>
-        {/* ── end Grid 2 ── */}
       </div>
 
       {/* ── Line Items ── */}
@@ -589,7 +672,7 @@ export default function NewInvoice() {
           </table>
         </div>
 
-        {/* ── Add row ── */}
+        {/* Add row */}
         <Button
           variant="ghost"
           onClick={addRow}
@@ -601,7 +684,7 @@ export default function NewInvoice() {
           </span>
         </Button>
 
-        {/* ── Tax summary ── */}
+        {/* Tax summary */}
         <div className="mt-4 flex flex-col items-end gap-1.5">
           {/* CGST */}
           <div className="flex items-center gap-2 text-sm">
@@ -667,11 +750,10 @@ export default function NewInvoice() {
         </div>
       </div>
 
-      {/* ── Create Invoice ── */}
-      <div className="mt-8 flex flex-col items-end gap-2">
-        {saveError && <p className="text-sm text-destructive">{saveError}</p>}
-        <Button onClick={handleCreate} disabled={saving}>
-          {saving ? "Saving…" : "Create Invoice"}
+      {/* ── Update button ── */}
+      <div className="mt-8 flex justify-end">
+        <Button onClick={handleUpdate} disabled={saving}>
+          {saving ? "Saving…" : "Update Invoice"}
         </Button>
       </div>
     </div>
