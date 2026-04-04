@@ -81,6 +81,8 @@ const invoicesAPI = {
         ipcRenderer.invoke("invoices:getById", id),
     getCount: (): Promise<number> =>
         ipcRenderer.invoke("invoices:getCount"),
+    getMaxSeqForCompany: (companyId: string): Promise<number> =>
+        ipcRenderer.invoke("invoices:getMaxSeqForCompany", companyId),
     getPaginated: (params: InvoiceFilter): Promise<PaginatedInvoicesResult> =>
         ipcRenderer.invoke("invoices:getPaginated", params),
     create: (data: InvoiceData): Promise<InvoiceData> =>

@@ -268,9 +268,13 @@ export default function NewInvoice() {
       setInvoiceNumber("")
       return
     }
-    void window.electronAPI.invoices.getCount().then((count) => {
-      setInvoiceNumber(buildInvoiceNumber(count + 1, selectedCompany.name, fy))
-    })
+    void window.electronAPI.invoices
+      .getMaxSeqForCompany(selectedCompany.id)
+      .then((maxSeq) => {
+        setInvoiceNumber(
+          buildInvoiceNumber(maxSeq + 1, selectedCompany.name, fy)
+        )
+      })
   }, [selectedCompany, fy])
 
   const navigate = useNavigate()

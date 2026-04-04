@@ -214,6 +214,17 @@ export function getInvoiceCount(): number {
     return row.count
 }
 
+export function getMaxInvoiceSeqForCompany(companyId: string): number {
+    const row = getDb()
+        .prepare(
+            `SELECT MAX(CAST(SUBSTR(invoice_number, 1, INSTR(invoice_number, '/') - 1) AS INTEGER)) as max_seq
+             FROM invoices
+             WHERE company_id = ?`
+        )
+        .get(companyId) as { max_seq: number | null }
+    return row.max_seq ?? 0
+}
+
 export function getInvoiceById(id: string): InvoiceRow | undefined {
     return getDb()
         .prepare("SELECT * FROM invoices WHERE id = ?")

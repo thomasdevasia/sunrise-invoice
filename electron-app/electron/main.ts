@@ -11,6 +11,7 @@ import {
   getAllInvoices,
   getInvoiceById,
   getInvoiceCount,
+  getMaxInvoiceSeqForCompany,
   getInvoicesPaginated,
   createInvoice,
   updateInvoice,
@@ -111,6 +112,8 @@ app.whenReady().then(() => {
   ipcMain.handle("invoices:getById", (_event, id: string) => getInvoiceById(id))
 
   ipcMain.handle("invoices:getCount", () => getInvoiceCount())
+
+  ipcMain.handle("invoices:getMaxSeqForCompany", (_event, companyId: string) => getMaxInvoiceSeqForCompany(companyId))
 
   ipcMain.handle("invoices:getPaginated", (_event, params) => getInvoicesPaginated(params))
 
