@@ -330,12 +330,15 @@ export default function EditInvoice() {
         sgst_percentage: parseFloat(sgstPct) || 0,
       })
 
+      const pad = (n: number) => String(n).padStart(2, "0")
+      const localDate = `${invoiceDate.getFullYear()}-${pad(invoiceDate.getMonth() + 1)}-${pad(invoiceDate.getDate())}`
+
       await window.electronAPI.invoices.update({
         id: id!,
         company_id: selectedCompanyId,
         client_id: selectedClientId,
         invoice_number: invoiceNumber.trim(),
-        invoice_date: invoiceDate.toISOString().slice(0, 10),
+        invoice_date: localDate,
         billed_items: billedItems,
       })
 
