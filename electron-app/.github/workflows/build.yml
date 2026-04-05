@@ -6,6 +6,9 @@ on:
       - "v*"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-linux:
     runs-on: ubuntu-latest
@@ -22,11 +25,10 @@ jobs:
       - name: Build AppImage
         run: npm run dist:linux
 
-      - name: Upload AppImage
-        uses: actions/upload-artifact@v4
+      - name: Publish to GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: linux-appimage
-          path: dist/*.AppImage
+          files: dist/*.AppImage
 
   build-mac:
     runs-on: macos-latest
@@ -43,8 +45,7 @@ jobs:
       - name: Build dmg
         run: npm run dist:mac
 
-      - name: Upload dmg
-        uses: actions/upload-artifact@v4
+      - name: Publish to GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: mac-dmg
-          path: dist/*.dmg
+          files: dist/*.dmg
