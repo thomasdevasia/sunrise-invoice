@@ -1,4 +1,24 @@
-import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer"
+import {
+  Document,
+  Font,
+  Page,
+  StyleSheet,
+  Text,
+  View,
+} from "@react-pdf/renderer"
+
+import NotoSansRegular from "@/assets/fonts/NotoSans-Regular.ttf"
+import NotoSansBold from "@/assets/fonts/NotoSans-Bold.ttf"
+import NotoSansItalic from "@/assets/fonts/NotoSans-Italic.ttf"
+
+Font.register({
+  family: "NotoSans",
+  fonts: [
+    { src: NotoSansRegular, fontWeight: "normal", fontStyle: "normal" },
+    { src: NotoSansBold, fontWeight: "bold", fontStyle: "normal" },
+    { src: NotoSansItalic, fontWeight: "normal", fontStyle: "italic" },
+  ],
+})
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -64,7 +84,7 @@ const B = "#000000"
 
 const styles = StyleSheet.create({
   page: {
-    fontFamily: "Helvetica",
+    fontFamily: "NotoSans",
     fontSize: 8,
     color: "#111111",
     paddingTop: 28,
@@ -92,13 +112,15 @@ const styles = StyleSheet.create({
   titleCenter: {
     flex: 1,
     textAlign: "center",
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "NotoSans",
+    fontWeight: "bold",
     fontSize: 12,
     letterSpacing: 1.5,
   },
   titleRight: {
     fontSize: 7,
-    fontFamily: "Helvetica-Oblique",
+    fontFamily: "NotoSans",
+    fontStyle: "italic",
     textAlign: "right",
   },
 
@@ -139,14 +161,16 @@ const styles = StyleSheet.create({
   // Section heading
   sectionLabel: {
     fontSize: 7,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "NotoSans",
+    fontWeight: "bold",
     color: "#555555",
     textTransform: "uppercase",
     letterSpacing: 0.4,
     marginBottom: 4,
   },
   entityName: {
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "NotoSans",
+    fontWeight: "bold",
     fontSize: 9,
     marginBottom: 2,
   },
@@ -168,7 +192,8 @@ const styles = StyleSheet.create({
   },
   kvVal: {
     fontSize: 8,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "NotoSans",
+    fontWeight: "bold",
     flex: 1,
   },
 
@@ -181,7 +206,8 @@ const styles = StyleSheet.create({
   },
   thText: {
     fontSize: 7,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "NotoSans",
+    fontWeight: "bold",
     textAlign: "center",
   },
 
@@ -269,7 +295,8 @@ const styles = StyleSheet.create({
     paddingBottom: 5,
     paddingRight: 8,
     fontSize: 9,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "NotoSans",
+    fontWeight: "bold",
   },
   totalValue: {
     width: 68,
@@ -278,7 +305,8 @@ const styles = StyleSheet.create({
     paddingBottom: 5,
     paddingRight: 6,
     fontSize: 9,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "NotoSans",
+    fontWeight: "bold",
   },
 
   // ── Amount in words
@@ -294,7 +322,8 @@ const styles = StyleSheet.create({
   },
   wordsValue: {
     fontSize: 8,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "NotoSans",
+    fontWeight: "bold",
   },
 
   // ── Bank details row
@@ -305,7 +334,8 @@ const styles = StyleSheet.create({
   },
   bankDetailsTitle: {
     fontSize: 7,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "NotoSans",
+    fontWeight: "bold",
     marginBottom: 4,
   },
   bankDetailItem: {
@@ -324,7 +354,8 @@ const styles = StyleSheet.create({
   },
   bankDetailVal: {
     fontSize: 7,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "NotoSans",
+    fontWeight: "bold",
     flex: 1,
   },
 
@@ -343,7 +374,8 @@ const styles = StyleSheet.create({
   },
   declarationTitle: {
     fontSize: 7,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "NotoSans",
+    fontWeight: "bold",
     marginBottom: 3,
   },
   declarationText: {
@@ -375,7 +407,8 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 7,
     color: "#888888",
-    fontFamily: "Helvetica-Oblique",
+    fontFamily: "NotoSans",
+    fontStyle: "italic",
   },
 })
 
@@ -625,176 +658,188 @@ export function InvoicePDFDocument({
           </View>
 
           {/* ── Line items table ── */}
+          <View style={{ flex: 1 }}>
+            {/* Table header */}
+            <View style={styles.tableHeader}>
+              <Text style={[styles.thText, styles.colSI]}>SI{"\n"}No.</Text>
+              <Text style={[styles.thText, styles.colDesc, { paddingLeft: 6 }]}>
+                Description of Goods / Services
+              </Text>
+              <Text style={[styles.thText, styles.colHsn]}>HSN/SAC</Text>
+              <Text style={[styles.thText, styles.colQty]}>Quantity</Text>
+              <Text style={[styles.thText, styles.colRate]}>Rate</Text>
+              <Text style={[styles.thText, styles.colAmount]}>Amount</Text>
+            </View>
 
-          {/* Table header */}
-          <View style={styles.tableHeader}>
-            <Text style={[styles.thText, styles.colSI]}>SI{"\n"}No.</Text>
-            <Text style={[styles.thText, styles.colDesc, { paddingLeft: 6 }]}>
-              Description of Goods / Services
-            </Text>
-            <Text style={[styles.thText, styles.colHsn]}>HSN/SAC</Text>
-            <Text style={[styles.thText, styles.colQty]}>Quantity</Text>
-            <Text style={[styles.thText, styles.colRate]}>Rate</Text>
-            <Text style={[styles.thText, styles.colAmount]}>Amount</Text>
-          </View>
+            {/* Line item rows */}
+            {lineItems.map((row, idx) => {
+              const qty = parseFloat(row.quantity) || 0
+              const rate = parseFloat(row.rate) || 0
+              const amount = qty * rate
+              return (
+                <View key={idx} style={styles.tableRow}>
+                  <Text style={[styles.tdMuted, styles.colSI]}>{idx + 1}</Text>
+                  <Text style={[styles.tdText, styles.colDesc]}>
+                    {row.description || "—"}
+                  </Text>
+                  <Text style={[styles.tdText, styles.colHsn]}>
+                    {row.hsnSac || "—"}
+                  </Text>
+                  <Text style={[styles.tdText, styles.colQty]}>
+                    {qty > 0 ? String(qty) : "—"}
+                  </Text>
+                  <Text style={[styles.tdText, styles.colRate]}>
+                    {rate > 0 ? fmt(rate) : "—"}
+                  </Text>
+                  <Text style={[styles.tdText, styles.colAmount]}>
+                    {amount > 0 ? fmt(amount) : "—"}
+                  </Text>
+                </View>
+              )
+            })}
 
-          {/* Line item rows */}
-          {lineItems.map((row, idx) => {
-            const qty = parseFloat(row.quantity) || 0
-            const rate = parseFloat(row.rate) || 0
-            const amount = qty * rate
-            return (
-              <View key={idx} style={styles.tableRow}>
-                <Text style={[styles.tdMuted, styles.colSI]}>{idx + 1}</Text>
-                <Text style={[styles.tdText, styles.colDesc]}>
-                  {row.description || "—"}
+            {visibleOtherCharges.map((charge, idx) => (
+              <View key={`charge-${idx}`} style={styles.tableRow}>
+                <Text style={[styles.tdMuted, styles.colSI]} />
+                <Text
+                  style={[
+                    styles.tdText,
+                    styles.colDesc,
+                    { textAlign: "right", paddingRight: 8 },
+                  ]}
+                >
+                  {charge.description || "Other Charge"}
                 </Text>
-                <Text style={[styles.tdText, styles.colHsn]}>
-                  {row.hsnSac || "—"}
-                </Text>
-                <Text style={[styles.tdText, styles.colQty]}>
-                  {qty > 0 ? String(qty) : "—"}
-                </Text>
-                <Text style={[styles.tdText, styles.colRate]}>
-                  {rate > 0 ? fmt(rate) : "—"}
-                </Text>
+                <Text style={[styles.tdMuted, styles.colHsn]} />
+                <Text style={[styles.tdMuted, styles.colQty]} />
+                <Text style={[styles.tdMuted, styles.colRate]} />
                 <Text style={[styles.tdText, styles.colAmount]}>
-                  {amount > 0 ? fmt(amount) : "—"}
+                  {fmt(charge.amount)}
                 </Text>
               </View>
-            )
-          })}
+            ))}
 
-          {visibleOtherCharges.map((charge, idx) => (
-            <View key={`charge-${idx}`} style={styles.tableRow}>
-              <Text style={[styles.tdMuted, styles.colSI]} />
-              <Text
-                style={[
-                  styles.tdText,
-                  styles.colDesc,
-                  { textAlign: "right", paddingRight: 8 },
-                ]}
-              >
-                {charge.description || "Other Charge"}
-              </Text>
-              <Text style={[styles.tdMuted, styles.colHsn]} />
-              <Text style={[styles.tdMuted, styles.colQty]} />
-              <Text style={[styles.tdMuted, styles.colRate]} />
-              <Text style={[styles.tdText, styles.colAmount]}>
-                {fmt(charge.amount)}
-              </Text>
-            </View>
-          ))}
+            {/* CGST sub-row */}
+            {cgstRate > 0 && (
+              <View style={styles.tableRow}>
+                <Text style={[styles.tdMuted, styles.colSI]} />
+                <Text
+                  style={[
+                    styles.tdText,
+                    styles.colDesc,
+                    {
+                      textAlign: "right",
+                      paddingRight: 8,
+                      fontStyle: "italic",
+                    },
+                  ]}
+                >
+                  CGST @ {cgstRate}%
+                </Text>
+                <Text style={[styles.tdMuted, styles.colHsn]} />
+                <Text style={[styles.tdMuted, styles.colQty]} />
+                <Text style={[styles.tdMuted, styles.colRate]} />
+                <Text style={[styles.tdText, styles.colAmount]}>
+                  {fmt(cgstAmt)}
+                </Text>
+              </View>
+            )}
 
-          {/* CGST sub-row */}
-          {cgstRate > 0 && (
-            <View style={styles.tableRow}>
-              <Text style={[styles.tdMuted, styles.colSI]} />
-              <Text
-                style={[
-                  styles.tdText,
-                  styles.colDesc,
-                  {
-                    textAlign: "right",
-                    paddingRight: 8,
-                    fontFamily: "Helvetica-Oblique",
-                  },
-                ]}
-              >
-                CGST @ {cgstRate}%
-              </Text>
-              <Text style={[styles.tdMuted, styles.colHsn]} />
-              <Text style={[styles.tdMuted, styles.colQty]} />
-              <Text style={[styles.tdMuted, styles.colRate]} />
-              <Text style={[styles.tdText, styles.colAmount]}>
-                {fmt(cgstAmt)}
-              </Text>
-            </View>
-          )}
+            {/* SGST sub-row */}
+            {sgstRate > 0 && (
+              <View style={styles.tableRow}>
+                <Text style={[styles.tdMuted, styles.colSI]} />
+                <Text
+                  style={[
+                    styles.tdText,
+                    styles.colDesc,
+                    {
+                      textAlign: "right",
+                      paddingRight: 8,
+                      fontStyle: "italic",
+                    },
+                  ]}
+                >
+                  SGST @ {sgstRate}%
+                </Text>
+                <Text style={[styles.tdMuted, styles.colHsn]} />
+                <Text style={[styles.tdMuted, styles.colQty]} />
+                <Text style={[styles.tdMuted, styles.colRate]} />
+                <Text style={[styles.tdText, styles.colAmount]}>
+                  {fmt(sgstAmt)}
+                </Text>
+              </View>
+            )}
 
-          {/* SGST sub-row */}
-          {sgstRate > 0 && (
-            <View style={styles.tableRow}>
-              <Text style={[styles.tdMuted, styles.colSI]} />
-              <Text
-                style={[
-                  styles.tdText,
-                  styles.colDesc,
-                  {
-                    textAlign: "right",
-                    paddingRight: 8,
-                    fontFamily: "Helvetica-Oblique",
-                  },
-                ]}
-              >
-                SGST @ {sgstRate}%
-              </Text>
-              <Text style={[styles.tdMuted, styles.colHsn]} />
-              <Text style={[styles.tdMuted, styles.colQty]} />
-              <Text style={[styles.tdMuted, styles.colRate]} />
-              <Text style={[styles.tdText, styles.colAmount]}>
-                {fmt(sgstAmt)}
-              </Text>
-            </View>
-          )}
+            {/* IGST sub-row */}
+            {igstRate > 0 && (
+              <View style={styles.tableRow}>
+                <Text style={[styles.tdMuted, styles.colSI]} />
+                <Text
+                  style={[
+                    styles.tdText,
+                    styles.colDesc,
+                    {
+                      textAlign: "right",
+                      paddingRight: 8,
+                      fontStyle: "italic",
+                    },
+                  ]}
+                >
+                  IGST @ {igstRate}%
+                </Text>
+                <Text style={[styles.tdMuted, styles.colHsn]} />
+                <Text style={[styles.tdMuted, styles.colQty]} />
+                <Text style={[styles.tdMuted, styles.colRate]} />
+                <Text style={[styles.tdText, styles.colAmount]}>
+                  {fmt(igstAmt)}
+                </Text>
+              </View>
+            )}
 
-          {/* IGST sub-row */}
-          {igstRate > 0 && (
-            <View style={styles.tableRow}>
-              <Text style={[styles.tdMuted, styles.colSI]} />
-              <Text
-                style={[
-                  styles.tdText,
-                  styles.colDesc,
-                  {
-                    textAlign: "right",
-                    paddingRight: 8,
-                    fontFamily: "Helvetica-Oblique",
-                  },
-                ]}
-              >
-                IGST @ {igstRate}%
-              </Text>
-              <Text style={[styles.tdMuted, styles.colHsn]} />
-              <Text style={[styles.tdMuted, styles.colQty]} />
-              <Text style={[styles.tdMuted, styles.colRate]} />
-              <Text style={[styles.tdText, styles.colAmount]}>
-                {fmt(igstAmt)}
-              </Text>
-            </View>
-          )}
+            {/* Rounded off sub-row */}
+            {Math.abs(roundedOff) >= 0.005 && (
+              <View style={styles.tableRowLast}>
+                <Text style={[styles.tdMuted, styles.colSI]} />
+                <Text
+                  style={[
+                    styles.tdText,
+                    styles.colDesc,
+                    {
+                      textAlign: "right",
+                      paddingRight: 8,
+                      fontStyle: "italic",
+                    },
+                  ]}
+                >
+                  Rounded Off
+                </Text>
+                <Text style={[styles.tdMuted, styles.colHsn]} />
+                <Text style={[styles.tdMuted, styles.colQty]} />
+                <Text style={[styles.tdMuted, styles.colRate]} />
+                <Text style={[styles.tdText, styles.colAmount]}>
+                  {fmt(roundedOff)}
+                </Text>
+              </View>
+            )}
 
-          {/* Rounded off sub-row */}
-          {Math.abs(roundedOff) >= 0.005 && (
-            <View style={styles.tableRowLast}>
-              <Text style={[styles.tdMuted, styles.colSI]} />
-              <Text
-                style={[
-                  styles.tdText,
-                  styles.colDesc,
-                  {
-                    textAlign: "right",
-                    paddingRight: 8,
-                    fontFamily: "Helvetica-Oblique",
-                  },
-                ]}
-              >
-                Rounded Off
-              </Text>
-              <Text style={[styles.tdMuted, styles.colHsn]} />
-              <Text style={[styles.tdMuted, styles.colQty]} />
-              <Text style={[styles.tdMuted, styles.colRate]} />
-              <Text style={[styles.tdText, styles.colAmount]}>
-                {fmt(roundedOff)}
-              </Text>
+            {/* Empty filler row - extends column lines through remaining space */}
+            <View style={{ flexDirection: "row", flex: 1 }}>
+              <View style={styles.colSI} />
+              <View style={styles.colDesc} />
+              <View style={styles.colHsn} />
+              <View style={styles.colQty} />
+              <View style={styles.colRate} />
+              <View style={styles.colAmount} />
             </View>
-          )}
+          </View>
+          {/* end table wrapper */}
 
           {/* Grand total row */}
           <View style={styles.totalRow}>
             <Text style={[styles.tdMuted, styles.colSI]} />
             <Text style={[styles.totalLabel]}>Total</Text>
-            <Text style={styles.totalValue}>Rs. {fmt(grandTotal)}</Text>
+            <Text style={styles.totalValue}>₹ {fmt(grandTotal)}</Text>
           </View>
 
           {/* ── Amount in words ── */}
@@ -802,9 +847,6 @@ export function InvoicePDFDocument({
             <Text style={styles.wordsLabel}>Amount Chargeable (in words)</Text>
             <Text style={styles.wordsValue}>{numberToWords(grandTotal)}</Text>
           </View>
-
-          {/* Spacer */}
-          <View style={{ flex: 1 }} />
 
           {/* ── Bank Details ── */}
           {(company.bankName ||
@@ -871,6 +913,7 @@ export function InvoicePDFDocument({
 
         {/* ── Footer (absolute bottom of page) ── */}
         <View style={styles.footer} fixed>
+          <Text style={styles.footerText}>SUBJECT TO DELHI JURISDICTION</Text>
           <Text style={styles.footerText}>
             This is a Computer Generated Invoice
           </Text>
