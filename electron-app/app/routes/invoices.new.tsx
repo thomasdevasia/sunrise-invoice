@@ -1,6 +1,6 @@
 import * as React from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { useNavigate } from "react-router"
+import { useNavigate, Link } from "react-router"
 import {
   BuildingIcon,
   UserIcon,
@@ -350,12 +350,12 @@ export default function NewInvoice() {
             ) : companies.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 No companies found.{" "}
-                <a
-                  href="/company"
+                <Link
+                  to="/company"
                   className="underline underline-offset-2 hover:text-foreground"
                 >
                   Add a company first.
-                </a>
+                </Link>
               </p>
             ) : (
               <>
@@ -405,12 +405,12 @@ export default function NewInvoice() {
             ) : clients.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 No clients found.{" "}
-                <a
-                  href="/clients"
+                <Link
+                  to="/clients"
                   className="underline underline-offset-2 hover:text-foreground"
                 >
                   Add a client first.
-                </a>
+                </Link>
               </p>
             ) : (
               <>
