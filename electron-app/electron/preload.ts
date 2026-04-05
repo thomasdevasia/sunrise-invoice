@@ -13,6 +13,10 @@ export type CompanyData = {
     gstin: string
     address: string
     state: string
+    bank_name: string
+    bank_account_number: string
+    bank_branch: string
+    bank_ifsc: string
 }
 
 export type CreateCompanyData = Omit<CompanyData, "id">

@@ -34,6 +34,10 @@ type Company = {
   gstin: string
   address: string
   state: string
+  bankName: string
+  bankAccountNumber: string
+  bankBranch: string
+  bankIfsc: string
 }
 
 type Client = {
@@ -80,6 +84,10 @@ function companyFromRow(
     gstin: r.gstin,
     address: r.address,
     state: r.state,
+    bankName: r.bank_name ?? "",
+    bankAccountNumber: r.bank_account_number ?? "",
+    bankBranch: r.bank_branch ?? "",
+    bankIfsc: r.bank_ifsc ?? "",
   }
 }
 
@@ -193,6 +201,12 @@ function EntityDetails({
     { label: "Phone", value: entity.phonePrimary },
     { label: "Address", value: entity.address },
     { label: "State", value: entity.state },
+    { label: "Bank", value: entity.bankName },
+    { label: "A/c No.", value: entity.bankAccountNumber },
+    {
+      label: "Branch & IFS Code",
+      value: [entity.bankBranch, entity.bankIfsc].filter(Boolean).join(" & "),
+    },
   ].filter((r) => r.value)
 
   return (

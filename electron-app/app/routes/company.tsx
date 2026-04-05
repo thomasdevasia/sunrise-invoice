@@ -4,6 +4,7 @@ import {
   Building2,
   ExternalLinkIcon,
   GlobeIcon,
+  LandmarkIcon,
   MailIcon,
   MapPinIcon,
   PhoneCallIcon,
@@ -59,6 +60,10 @@ type Company = {
   gstin: string
   address: string
   state: string
+  bankName: string
+  bankAccountNumber: string
+  bankBranch: string
+  bankIfsc: string
 }
 
 const EMPTY_FORM: Omit<Company, "id"> = {
@@ -73,6 +78,10 @@ const EMPTY_FORM: Omit<Company, "id"> = {
   gstin: "",
   address: "",
   state: "",
+  bankName: "",
+  bankAccountNumber: "",
+  bankBranch: "",
+  bankIfsc: "",
 }
 
 // ─── IPC helpers ─────────────────────────────────────────────────────────────
@@ -91,6 +100,10 @@ function toRow(c: Company) {
     gstin: c.gstin,
     address: c.address,
     state: c.state,
+    bank_name: c.bankName,
+    bank_account_number: c.bankAccountNumber,
+    bank_branch: c.bankBranch,
+    bank_ifsc: c.bankIfsc,
   }
 }
 
@@ -110,6 +123,10 @@ function fromRow(
     gstin: r.gstin,
     address: r.address,
     state: r.state,
+    bankName: r.bank_name,
+    bankAccountNumber: r.bank_account_number,
+    bankBranch: r.bank_branch,
+    bankIfsc: r.bank_ifsc,
   }
 }
 
@@ -204,6 +221,24 @@ function CompanyCard({
           <CardRow icon={GlobeIcon} value={company.website} />
           <CardRow icon={BadgeIcon} value={company.pan} mono />
           <CardRow icon={ReceiptTextIcon} value={company.gstin} mono />
+          <CardRow icon={LandmarkIcon} value={company.bankName} tag="Bank" />
+          <CardRow
+            icon={LandmarkIcon}
+            value={company.bankAccountNumber}
+            tag="Acct"
+            mono
+          />
+          <CardRow
+            icon={LandmarkIcon}
+            value={company.bankBranch}
+            tag="Branch"
+          />
+          <CardRow
+            icon={LandmarkIcon}
+            value={company.bankIfsc}
+            tag="IFSC"
+            mono
+          />
         </ul>
       </CardContent>
 
@@ -316,6 +351,10 @@ export default function Company() {
       gstin: company.gstin,
       address: company.address,
       state: company.state,
+      bankName: company.bankName,
+      bankAccountNumber: company.bankAccountNumber,
+      bankBranch: company.bankBranch,
+      bankIfsc: company.bankIfsc,
     })
     setDialogOpen(true)
   }
@@ -350,7 +389,7 @@ export default function Company() {
 
           <form
             onSubmit={handleSubmit}
-            className="mt-1 flex flex-col gap-4 overflow-y-auto"
+            className="mt-1 flex flex-col gap-4 overflow-y-auto pr-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border"
           >
             {/* ── General ── */}
             <div className="grid grid-cols-2 gap-3">
@@ -509,6 +548,71 @@ export default function Company() {
               </div>
             </div>
 
+            {/* ── Bank ── */}
+            <div className="flex flex-col gap-2">
+              <p className="text-xs font-medium text-muted-foreground">Bank</p>
+              <div className="grid gap-1.5">
+                <label
+                  htmlFor="bankName"
+                  className="text-xs text-muted-foreground"
+                >
+                  Bank Name
+                </label>
+                <Input
+                  id="bankName"
+                  name="bankName"
+                  placeholder="State Bank of India"
+                  value={form.bankName}
+                  onChange={handleFormChange}
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <label
+                  htmlFor="bankAccountNumber"
+                  className="text-xs text-muted-foreground"
+                >
+                  Account Number
+                </label>
+                <Input
+                  id="bankAccountNumber"
+                  name="bankAccountNumber"
+                  placeholder="123456789012"
+                  value={form.bankAccountNumber}
+                  onChange={handleFormChange}
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <label
+                  htmlFor="bankBranch"
+                  className="text-xs text-muted-foreground"
+                >
+                  Branch
+                </label>
+                <Input
+                  id="bankBranch"
+                  name="bankBranch"
+                  placeholder="MG Road, Bangalore"
+                  value={form.bankBranch}
+                  onChange={handleFormChange}
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <label
+                  htmlFor="bankIfsc"
+                  className="text-xs text-muted-foreground"
+                >
+                  IFSC Code
+                </label>
+                <Input
+                  id="bankIfsc"
+                  name="bankIfsc"
+                  placeholder="SBIN0000123"
+                  value={form.bankIfsc}
+                  onChange={handleFormChange}
+                />
+              </div>
+            </div>
+
             {/* ── Other ── */}
             <div className="grid gap-1.5">
               <label
@@ -527,7 +631,7 @@ export default function Company() {
               />
             </div>
 
-            <DialogFooter className="mt-2">
+            <DialogFooter className="mt-2 shrink-0">
               <DialogClose render={<Button variant="outline" type="button" />}>
                 Cancel
               </DialogClose>

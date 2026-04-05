@@ -14,6 +14,10 @@ export type InvoiceCompany = {
   gstin: string
   address: string
   state: string
+  bankName: string
+  bankAccountNumber: string
+  bankBranch: string
+  bankIfsc: string
 }
 
 export type InvoiceParty = {
@@ -291,6 +295,37 @@ const styles = StyleSheet.create({
   wordsValue: {
     fontSize: 8,
     fontFamily: "Helvetica-Bold",
+  },
+
+  // ── Bank details row
+  bankDetailsRow: {
+    borderTopWidth: 0.5,
+    borderTopColor: B,
+    padding: 7,
+  },
+  bankDetailsTitle: {
+    fontSize: 7,
+    fontFamily: "Helvetica-Bold",
+    marginBottom: 4,
+  },
+  bankDetailItem: {
+    flexDirection: "row",
+    marginBottom: 2,
+  },
+  bankDetailKey: {
+    fontSize: 7,
+    color: "#333333",
+    width: 80,
+  },
+  bankDetailColon: {
+    fontSize: 7,
+    color: "#333333",
+    width: 10,
+  },
+  bankDetailVal: {
+    fontSize: 7,
+    fontFamily: "Helvetica-Bold",
+    flex: 1,
   },
 
   // ── Declaration / Signatory row
@@ -770,6 +805,45 @@ export function InvoicePDFDocument({
 
           {/* Spacer */}
           <View style={{ flex: 1 }} />
+
+          {/* ── Bank Details ── */}
+          {(company.bankName ||
+            company.bankAccountNumber ||
+            company.bankBranch ||
+            company.bankIfsc) && (
+            <View style={styles.bankDetailsRow}>
+              <Text style={styles.bankDetailsTitle}>
+                Company's Bank Details
+              </Text>
+              {company.bankName ? (
+                <View style={styles.bankDetailItem}>
+                  <Text style={styles.bankDetailKey}>Bank Name</Text>
+                  <Text style={styles.bankDetailColon}>:</Text>
+                  <Text style={styles.bankDetailVal}>{company.bankName}</Text>
+                </View>
+              ) : null}
+              {company.bankAccountNumber ? (
+                <View style={styles.bankDetailItem}>
+                  <Text style={styles.bankDetailKey}>A/c No.</Text>
+                  <Text style={styles.bankDetailColon}>:</Text>
+                  <Text style={styles.bankDetailVal}>
+                    {company.bankAccountNumber}
+                  </Text>
+                </View>
+              ) : null}
+              {company.bankBranch || company.bankIfsc ? (
+                <View style={styles.bankDetailItem}>
+                  <Text style={styles.bankDetailKey}>Branch & IFS Code</Text>
+                  <Text style={styles.bankDetailColon}>:</Text>
+                  <Text style={styles.bankDetailVal}>
+                    {[company.bankBranch, company.bankIfsc]
+                      .filter(Boolean)
+                      .join(" & ")}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          )}
 
           {/* ── Declaration / Authorised Signatory ── */}
           <View style={styles.declarationRow}>

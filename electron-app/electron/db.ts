@@ -17,6 +17,10 @@ export type CompanyRow = {
     gstin: string
     address: string
     state: string
+    bank_name: string | null
+    bank_account_number: string | null
+    bank_branch: string | null
+    bank_ifsc: string | null
 }
 
 export type ClientRow = {
@@ -134,6 +138,10 @@ function migrate(db: Database.Database) {
 
     ensureColumn(db, "invoices", "transport_mode", "transport_mode TEXT")
     ensureColumn(db, "invoices", "vehicle_number", "vehicle_number TEXT")
+    ensureColumn(db, "companies", "bank_name", "bank_name TEXT")
+    ensureColumn(db, "companies", "bank_account_number", "bank_account_number TEXT")
+    ensureColumn(db, "companies", "bank_branch", "bank_branch TEXT")
+    ensureColumn(db, "companies", "bank_ifsc", "bank_ifsc TEXT")
 }
 
 // ─── CRUD ─────────────────────────────────────────────────────────────────────
@@ -147,10 +155,12 @@ export function createCompany(data: Omit<CompanyRow, never>): CompanyRow {
         .prepare(
             `INSERT INTO companies
         (id, name, email_primary, email_secondary, phone_primary, phone_secondary,
-         phone_landline, website, pan, gstin, address, state)
+         phone_landline, website, pan, gstin, address, state,
+         bank_name, bank_account_number, bank_branch, bank_ifsc)
        VALUES
         (@id, @name, @email_primary, @email_secondary, @phone_primary, @phone_secondary,
-         @phone_landline, @website, @pan, @gstin, @address, @state)`
+         @phone_landline, @website, @pan, @gstin, @address, @state,
+         @bank_name, @bank_account_number, @bank_branch, @bank_ifsc)`
         )
         .run(data)
     return getDb().prepare("SELECT * FROM companies WHERE id = ?").get(data.id) as CompanyRow
@@ -170,7 +180,11 @@ export function updateCompany(data: CompanyRow): CompanyRow {
         pan = @pan,
         gstin = @gstin,
         address = @address,
-        state = @state
+        state = @state,
+        bank_name = @bank_name,
+        bank_account_number = @bank_account_number,
+        bank_branch = @bank_branch,
+        bank_ifsc = @bank_ifsc
        WHERE id = @id`
         )
         .run(data)
