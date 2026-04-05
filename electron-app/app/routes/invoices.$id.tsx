@@ -307,6 +307,7 @@ function PartyFormFields({
             value={party.name}
             onChange={(e) => field("name", e.target.value)}
             placeholder="Full name"
+            className="border border-transparent bg-transparent shadow-none hover:border-border focus:border-border focus:bg-input/20 focus-visible:ring-0 dark:bg-transparent dark:focus:bg-input/30"
           />
         </div>
         <div className="flex flex-col gap-1">
@@ -317,6 +318,7 @@ function PartyFormFields({
             value={party.gstin}
             onChange={(e) => field("gstin", e.target.value)}
             placeholder="22AAAAA0000A1Z5"
+            className="border border-transparent bg-transparent shadow-none hover:border-border focus:border-border focus:bg-input/20 focus-visible:ring-0 dark:bg-transparent dark:focus:bg-input/30"
           />
         </div>
         <div className="flex flex-col gap-1">
@@ -327,6 +329,7 @@ function PartyFormFields({
             value={party.state}
             onChange={(e) => field("state", e.target.value)}
             placeholder="e.g. Kerala"
+            className="border border-transparent bg-transparent shadow-none hover:border-border focus:border-border focus:bg-input/20 focus-visible:ring-0 dark:bg-transparent dark:focus:bg-input/30"
           />
         </div>
         <div className="col-span-2 flex flex-col gap-1">
@@ -337,6 +340,7 @@ function PartyFormFields({
             value={party.address}
             onChange={(e) => field("address", e.target.value)}
             placeholder="Street, City, PIN"
+            className="border border-transparent bg-transparent shadow-none hover:border-border focus:border-border focus:bg-input/20 focus-visible:ring-0 dark:bg-transparent dark:focus:bg-input/30"
           />
         </div>
         <div className="flex flex-col gap-1">
@@ -347,6 +351,7 @@ function PartyFormFields({
             value={party.emailPrimary}
             onChange={(e) => field("emailPrimary", e.target.value)}
             placeholder="primary@email.com"
+            className="border border-transparent bg-transparent shadow-none hover:border-border focus:border-border focus:bg-input/20 focus-visible:ring-0 dark:bg-transparent dark:focus:bg-input/30"
           />
         </div>
         <div className="flex flex-col gap-1">
@@ -357,6 +362,7 @@ function PartyFormFields({
             value={party.emailSecondary}
             onChange={(e) => field("emailSecondary", e.target.value)}
             placeholder="secondary@email.com"
+            className="border border-transparent bg-transparent shadow-none hover:border-border focus:border-border focus:bg-input/20 focus-visible:ring-0 dark:bg-transparent dark:focus:bg-input/30"
           />
         </div>
         <div className="flex flex-col gap-1">
@@ -367,6 +373,7 @@ function PartyFormFields({
             value={party.phonePrimary}
             onChange={(e) => field("phonePrimary", e.target.value)}
             placeholder="+91 98765 43210"
+            className="border border-transparent bg-transparent shadow-none hover:border-border focus:border-border focus:bg-input/20 focus-visible:ring-0 dark:bg-transparent dark:focus:bg-input/30"
           />
         </div>
         <div className="flex flex-col gap-1">
@@ -377,6 +384,7 @@ function PartyFormFields({
             value={party.phoneSecondary}
             onChange={(e) => field("phoneSecondary", e.target.value)}
             placeholder="+91 98765 43210"
+            className="border border-transparent bg-transparent shadow-none hover:border-border focus:border-border focus:bg-input/20 focus-visible:ring-0 dark:bg-transparent dark:focus:bg-input/30"
           />
         </div>
         <div className="flex flex-col gap-1">
@@ -387,6 +395,7 @@ function PartyFormFields({
             value={party.phoneLandline}
             onChange={(e) => field("phoneLandline", e.target.value)}
             placeholder="0484-123456"
+            className="border border-transparent bg-transparent shadow-none hover:border-border focus:border-border focus:bg-input/20 focus-visible:ring-0 dark:bg-transparent dark:focus:bg-input/30"
           />
         </div>
       </div>
