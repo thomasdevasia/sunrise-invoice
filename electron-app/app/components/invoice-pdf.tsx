@@ -260,6 +260,42 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica-Bold",
   },
 
+  // ── Declaration / Signatory row
+  declarationRow: {
+    flexDirection: "row",
+    borderTopWidth: 0.5,
+    borderTopColor: B,
+    minHeight: 64,
+  },
+  declarationBox: {
+    flex: 1,
+    borderRightWidth: 0.5,
+    borderRightColor: B,
+    padding: 7,
+  },
+  declarationTitle: {
+    fontSize: 7,
+    fontFamily: "Helvetica-Bold",
+    marginBottom: 3,
+  },
+  declarationText: {
+    fontSize: 7,
+    color: "#444444",
+    lineHeight: 1.5,
+  },
+  signatoryBox: {
+    width: 160,
+    padding: 7,
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  signatoryLabel: {
+    fontSize: 7,
+    color: "#444444",
+    textAlign: "center",
+    width: "100%",
+  },
+
   // ── Footer
   footer: {
     position: "absolute",
@@ -295,12 +331,38 @@ function formatDate(date: Date) {
 // ── Number to Indian words ────────────────────────────────────────────────────
 
 const _ones = [
-  "", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine",
-  "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen",
-  "Seventeen", "Eighteen", "Nineteen",
+  "",
+  "One",
+  "Two",
+  "Three",
+  "Four",
+  "Five",
+  "Six",
+  "Seven",
+  "Eight",
+  "Nine",
+  "Ten",
+  "Eleven",
+  "Twelve",
+  "Thirteen",
+  "Fourteen",
+  "Fifteen",
+  "Sixteen",
+  "Seventeen",
+  "Eighteen",
+  "Nineteen",
 ]
 const _tens = [
-  "", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety",
+  "",
+  "",
+  "Twenty",
+  "Thirty",
+  "Forty",
+  "Fifty",
+  "Sixty",
+  "Seventy",
+  "Eighty",
+  "Ninety",
 ]
 
 function _twoDigit(n: number): string {
@@ -312,7 +374,11 @@ function _twoDigit(n: number): string {
 function _threeDigit(n: number): string {
   if (n === 0) return ""
   if (n < 100) return _twoDigit(n)
-  return _ones[Math.floor(n / 100)] + " Hundred" + (n % 100 ? " " + _twoDigit(n % 100) : "")
+  return (
+    _ones[Math.floor(n / 100)] +
+    " Hundred" +
+    (n % 100 ? " " + _twoDigit(n % 100) : "")
+  )
 }
 
 function numberToWords(amount: number): string {
@@ -396,7 +462,6 @@ export function InvoicePDFDocument({
         </View>
 
         <View style={styles.outer}>
-
           {/* ── Seller / Invoice info ── */}
           <View style={styles.infoRow}>
             {/* Seller details */}
@@ -404,7 +469,9 @@ export function InvoicePDFDocument({
               <Text style={styles.sectionLabel}>Seller</Text>
               <Text style={styles.entityName}>{company.name}</Text>
               {companyDetailLines.map((line, i) => (
-                <Text key={i} style={styles.detailLine}>{line}</Text>
+                <Text key={i} style={styles.detailLine}>
+                  {line}
+                </Text>
               ))}
             </View>
 
@@ -430,10 +497,12 @@ export function InvoicePDFDocument({
 
           {/* ── Buyer row ── */}
           <View style={styles.buyerRow}>
-            <Text style={styles.sectionLabel}>Buyer (Bill To / Consignee)</Text>
+            <Text style={styles.sectionLabel}>Bill To </Text>
             <Text style={styles.entityName}>{client.name}</Text>
             {clientDetailLines.map((line, i) => (
-              <Text key={i} style={styles.detailLine}>{line}</Text>
+              <Text key={i} style={styles.detailLine}>
+                {line}
+              </Text>
             ))}
           </View>
 
@@ -458,7 +527,13 @@ export function InvoicePDFDocument({
             return (
               <View key={idx} style={styles.tableRow}>
                 <Text style={[styles.tdMuted, styles.colSI]}>{idx + 1}</Text>
-                <Text style={[styles.tdText, styles.colDesc, { fontFamily: "Helvetica-Bold" }]}>
+                <Text
+                  style={[
+                    styles.tdText,
+                    styles.colDesc,
+                    { fontFamily: "Helvetica-Bold" },
+                  ]}
+                >
                   {row.description || "—"}
                 </Text>
                 <Text style={[styles.tdText, styles.colQty]}>
@@ -478,12 +553,24 @@ export function InvoicePDFDocument({
           {cgstRate > 0 && (
             <View style={styles.tableRow}>
               <Text style={[styles.tdMuted, styles.colSI]} />
-              <Text style={[styles.tdText, styles.colDesc, { textAlign: "right", paddingRight: 8, fontFamily: "Helvetica-Oblique" }]}>
+              <Text
+                style={[
+                  styles.tdText,
+                  styles.colDesc,
+                  {
+                    textAlign: "right",
+                    paddingRight: 8,
+                    fontFamily: "Helvetica-Oblique",
+                  },
+                ]}
+              >
                 CGST @ {cgstRate}%
               </Text>
               <Text style={[styles.tdMuted, styles.colQty]} />
               <Text style={[styles.tdMuted, styles.colRate]} />
-              <Text style={[styles.tdText, styles.colAmount]}>{fmt(cgstAmt)}</Text>
+              <Text style={[styles.tdText, styles.colAmount]}>
+                {fmt(cgstAmt)}
+              </Text>
             </View>
           )}
 
@@ -491,12 +578,24 @@ export function InvoicePDFDocument({
           {sgstRate > 0 && (
             <View style={styles.tableRow}>
               <Text style={[styles.tdMuted, styles.colSI]} />
-              <Text style={[styles.tdText, styles.colDesc, { textAlign: "right", paddingRight: 8, fontFamily: "Helvetica-Oblique" }]}>
+              <Text
+                style={[
+                  styles.tdText,
+                  styles.colDesc,
+                  {
+                    textAlign: "right",
+                    paddingRight: 8,
+                    fontFamily: "Helvetica-Oblique",
+                  },
+                ]}
+              >
                 SGST @ {sgstRate}%
               </Text>
               <Text style={[styles.tdMuted, styles.colQty]} />
               <Text style={[styles.tdMuted, styles.colRate]} />
-              <Text style={[styles.tdText, styles.colAmount]}>{fmt(sgstAmt)}</Text>
+              <Text style={[styles.tdText, styles.colAmount]}>
+                {fmt(sgstAmt)}
+              </Text>
             </View>
           )}
 
@@ -504,12 +603,24 @@ export function InvoicePDFDocument({
           {Math.abs(roundedOff) >= 0.005 && (
             <View style={styles.tableRowLast}>
               <Text style={[styles.tdMuted, styles.colSI]} />
-              <Text style={[styles.tdText, styles.colDesc, { textAlign: "right", paddingRight: 8, fontFamily: "Helvetica-Oblique" }]}>
+              <Text
+                style={[
+                  styles.tdText,
+                  styles.colDesc,
+                  {
+                    textAlign: "right",
+                    paddingRight: 8,
+                    fontFamily: "Helvetica-Oblique",
+                  },
+                ]}
+              >
                 Rounded Off
               </Text>
               <Text style={[styles.tdMuted, styles.colQty]} />
               <Text style={[styles.tdMuted, styles.colRate]} />
-              <Text style={[styles.tdText, styles.colAmount]}>{fmt(roundedOff)}</Text>
+              <Text style={[styles.tdText, styles.colAmount]}>
+                {fmt(roundedOff)}
+              </Text>
             </View>
           )}
 
@@ -526,6 +637,31 @@ export function InvoicePDFDocument({
             <Text style={styles.wordsValue}>{numberToWords(grandTotal)}</Text>
           </View>
 
+          {/* Spacer */}
+          <View style={{ flex: 1 }} />
+
+          {/* ── Declaration / Authorised Signatory ── */}
+          <View style={styles.declarationRow}>
+            <View style={styles.declarationBox}>
+              <Text style={styles.declarationTitle}>Declaration</Text>
+              <Text style={styles.declarationText}>
+                We declare that this invoice shows the actual price of the goods
+                described and that all particulars are true and correct.
+              </Text>
+            </View>
+            <View style={styles.signatoryBox}>
+              <Text
+                style={{
+                  fontSize: 7,
+                  color: "#444444",
+                  alignSelf: "flex-start",
+                }}
+              >
+                for {company.name}
+              </Text>
+              <Text style={styles.signatoryLabel}>Authorised Signatory</Text>
+            </View>
+          </View>
         </View>
 
         {/* ── Footer (absolute bottom of page) ── */}
