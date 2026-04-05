@@ -20,15 +20,17 @@ jobs:
           node-version: 22
 
       - name: Install dependencies
+        working-directory: electron-app
         run: npm ci
 
       - name: Build AppImage
+        working-directory: electron-app
         run: npm run dist:linux
 
       - name: Publish to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*.AppImage
+          files: electron-app/dist/*.AppImage
 
   build-mac:
     runs-on: macos-latest
@@ -40,12 +42,14 @@ jobs:
           node-version: 22
 
       - name: Install dependencies
+        working-directory: electron-app
         run: npm ci
 
       - name: Build dmg
+        working-directory: electron-app
         run: npm run dist:mac
 
       - name: Publish to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*.dmg
+          files: electron-app/dist/*.dmg
