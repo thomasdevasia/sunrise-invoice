@@ -31,6 +31,7 @@ export type InvoiceParty = {
 
 export type InvoiceLineItem = {
   description: string
+  hsnSac: string
   quantity: string
   rate: string
 }
@@ -41,10 +42,16 @@ export type InvoicePDFProps = {
   shipTo: InvoiceParty
   invoiceNumber: string
   invoiceDate: Date
+  transportMode?: string | null
+  vehicleNumber?: string | null
   lineItems: InvoiceLineItem[]
+  otherCharges?: {
+    description: string
+    amount: number
+  }[]
   cgstPct: string
   sgstPct: string
-  vehicleNumber?: string
+  igstPct: string
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -206,6 +213,16 @@ const styles = StyleSheet.create({
     borderRightWidth: 0.5,
     borderRightColor: B,
   },
+  colHsn: {
+    width: 56,
+    textAlign: "center",
+    borderRightWidth: 0.5,
+    borderRightColor: B,
+    paddingTop: 4,
+    paddingBottom: 4,
+    paddingLeft: 2,
+    paddingRight: 2,
+  },
   colQty: {
     width: 56,
     textAlign: "center",
@@ -344,6 +361,11 @@ function formatDate(date: Date) {
   })
 }
 
+function printable(value?: string | null) {
+  const text = value?.trim()
+  return text ? text : "-"
+}
+
 // ── Number to Indian words ────────────────────────────────────────────────────
 
 const _ones = [
@@ -433,20 +455,32 @@ export function InvoicePDFDocument({
   shipTo,
   invoiceNumber,
   invoiceDate,
+  transportMode,
+  vehicleNumber,
   lineItems,
+  otherCharges = [],
   cgstPct,
   sgstPct,
-  vehicleNumber,
+  igstPct,
 }: InvoicePDFProps) {
   const subtotal = lineItems.reduce(
     (sum, r) => sum + (parseFloat(r.quantity) || 0) * (parseFloat(r.rate) || 0),
     0
   )
+  const visibleOtherCharges = otherCharges.filter(
+    (charge) => charge.description.trim() || charge.amount > 0
+  )
+  const otherChargesTotal = visibleOtherCharges.reduce(
+    (sum, charge) => sum + charge.amount,
+    0
+  )
   const cgstRate = parseFloat(cgstPct) || 0
   const sgstRate = parseFloat(sgstPct) || 0
+  const igstRate = parseFloat(igstPct) || 0
   const cgstAmt = subtotal * (cgstRate / 100)
   const sgstAmt = subtotal * (sgstRate / 100)
-  const exactTotal = subtotal + cgstAmt + sgstAmt
+  const igstAmt = subtotal * (igstRate / 100)
+  const exactTotal = subtotal + otherChargesTotal + cgstAmt + sgstAmt + igstAmt
   const grandTotal = Math.ceil(exactTotal)
   const roundedOff = grandTotal - exactTotal
 
@@ -522,12 +556,14 @@ export function InvoicePDFDocument({
                 <Text style={styles.kvKey}>Date</Text>
                 <Text style={styles.kvVal}>{formatDate(invoiceDate)}</Text>
               </View>
-              {vehicleNumber ? (
-                <View style={styles.kvRow}>
-                  <Text style={styles.kvKey}>Vehicle No.</Text>
-                  <Text style={styles.kvVal}>{vehicleNumber}</Text>
-                </View>
-              ) : null}
+              <View style={styles.kvRow}>
+                <Text style={styles.kvKey}>Transport</Text>
+                <Text style={styles.kvVal}>{printable(transportMode)}</Text>
+              </View>
+              <View style={styles.kvRow}>
+                <Text style={styles.kvKey}>Vehicle No.</Text>
+                <Text style={styles.kvVal}>{printable(vehicleNumber)}</Text>
+              </View>
             </View>
           </View>
 
@@ -537,14 +573,18 @@ export function InvoicePDFDocument({
               <Text style={styles.sectionLabel}>Bill To</Text>
               <Text style={styles.entityName}>{billTo.name}</Text>
               {billToLines.map((line, i) => (
-                <Text key={i} style={styles.detailLine}>{line}</Text>
+                <Text key={i} style={styles.detailLine}>
+                  {line}
+                </Text>
               ))}
             </View>
             <View style={styles.shipToBox}>
               <Text style={styles.sectionLabel}>Ship To</Text>
               <Text style={styles.entityName}>{shipTo.name}</Text>
               {shipToLines.map((line, i) => (
-                <Text key={i} style={styles.detailLine}>{line}</Text>
+                <Text key={i} style={styles.detailLine}>
+                  {line}
+                </Text>
               ))}
             </View>
           </View>
@@ -557,6 +597,7 @@ export function InvoicePDFDocument({
             <Text style={[styles.thText, styles.colDesc, { paddingLeft: 6 }]}>
               Description of Goods / Services
             </Text>
+            <Text style={[styles.thText, styles.colHsn]}>HSN/SAC</Text>
             <Text style={[styles.thText, styles.colQty]}>Quantity</Text>
             <Text style={[styles.thText, styles.colRate]}>Rate</Text>
             <Text style={[styles.thText, styles.colAmount]}>Amount</Text>
@@ -570,14 +611,11 @@ export function InvoicePDFDocument({
             return (
               <View key={idx} style={styles.tableRow}>
                 <Text style={[styles.tdMuted, styles.colSI]}>{idx + 1}</Text>
-                <Text
-                  style={[
-                    styles.tdText,
-                    styles.colDesc,
-                    { fontFamily: "Helvetica-Bold" },
-                  ]}
-                >
+                <Text style={[styles.tdText, styles.colDesc]}>
                   {row.description || "—"}
+                </Text>
+                <Text style={[styles.tdText, styles.colHsn]}>
+                  {row.hsnSac || "—"}
                 </Text>
                 <Text style={[styles.tdText, styles.colQty]}>
                   {qty > 0 ? String(qty) : "—"}
@@ -591,6 +629,27 @@ export function InvoicePDFDocument({
               </View>
             )
           })}
+
+          {visibleOtherCharges.map((charge, idx) => (
+            <View key={`charge-${idx}`} style={styles.tableRow}>
+              <Text style={[styles.tdMuted, styles.colSI]} />
+              <Text
+                style={[
+                  styles.tdText,
+                  styles.colDesc,
+                  { textAlign: "right", paddingRight: 8 },
+                ]}
+              >
+                {charge.description || "Other Charge"}
+              </Text>
+              <Text style={[styles.tdMuted, styles.colHsn]} />
+              <Text style={[styles.tdMuted, styles.colQty]} />
+              <Text style={[styles.tdMuted, styles.colRate]} />
+              <Text style={[styles.tdText, styles.colAmount]}>
+                {fmt(charge.amount)}
+              </Text>
+            </View>
+          ))}
 
           {/* CGST sub-row */}
           {cgstRate > 0 && (
@@ -609,6 +668,7 @@ export function InvoicePDFDocument({
               >
                 CGST @ {cgstRate}%
               </Text>
+              <Text style={[styles.tdMuted, styles.colHsn]} />
               <Text style={[styles.tdMuted, styles.colQty]} />
               <Text style={[styles.tdMuted, styles.colRate]} />
               <Text style={[styles.tdText, styles.colAmount]}>
@@ -634,10 +694,37 @@ export function InvoicePDFDocument({
               >
                 SGST @ {sgstRate}%
               </Text>
+              <Text style={[styles.tdMuted, styles.colHsn]} />
               <Text style={[styles.tdMuted, styles.colQty]} />
               <Text style={[styles.tdMuted, styles.colRate]} />
               <Text style={[styles.tdText, styles.colAmount]}>
                 {fmt(sgstAmt)}
+              </Text>
+            </View>
+          )}
+
+          {/* IGST sub-row */}
+          {igstRate > 0 && (
+            <View style={styles.tableRow}>
+              <Text style={[styles.tdMuted, styles.colSI]} />
+              <Text
+                style={[
+                  styles.tdText,
+                  styles.colDesc,
+                  {
+                    textAlign: "right",
+                    paddingRight: 8,
+                    fontFamily: "Helvetica-Oblique",
+                  },
+                ]}
+              >
+                IGST @ {igstRate}%
+              </Text>
+              <Text style={[styles.tdMuted, styles.colHsn]} />
+              <Text style={[styles.tdMuted, styles.colQty]} />
+              <Text style={[styles.tdMuted, styles.colRate]} />
+              <Text style={[styles.tdText, styles.colAmount]}>
+                {fmt(igstAmt)}
               </Text>
             </View>
           )}
@@ -659,6 +746,7 @@ export function InvoicePDFDocument({
               >
                 Rounded Off
               </Text>
+              <Text style={[styles.tdMuted, styles.colHsn]} />
               <Text style={[styles.tdMuted, styles.colQty]} />
               <Text style={[styles.tdMuted, styles.colRate]} />
               <Text style={[styles.tdText, styles.colAmount]}>

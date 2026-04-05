@@ -1,12 +1,7 @@
 import * as React from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useNavigate, Link } from "react-router"
-import {
-  BuildingIcon,
-  CalendarIcon,
-  PlusIcon,
-  Trash2Icon,
-} from "lucide-react"
+import { BuildingIcon, CalendarIcon, PlusIcon, Trash2Icon } from "lucide-react"
 
 import {
   Combobox,
@@ -208,7 +203,10 @@ function EntityDetails({
       </div>
       <div className="flex flex-col gap-1">
         {rows.map((r) => (
-          <div key={r.label} className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div
+            key={r.label}
+            className="flex items-center gap-2 text-xs text-muted-foreground"
+          >
             <span className="font-medium text-foreground/70">{r.label}:</span>
             <span>{r.value}</span>
           </div>
@@ -294,7 +292,9 @@ function PartyFormFields({
       {/* Editable fields */}
       <div className="grid grid-cols-2 gap-x-2 gap-y-3">
         <div className="col-span-2 flex flex-col gap-1">
-          <label className="text-xs font-medium text-muted-foreground">Name <span className="text-destructive">*</span></label>
+          <label className="text-xs font-medium text-muted-foreground">
+            Name <span className="text-destructive">*</span>
+          </label>
           <Input
             value={party.name}
             onChange={(e) => field("name", e.target.value)}
@@ -303,7 +303,9 @@ function PartyFormFields({
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-muted-foreground">GSTIN</label>
+          <label className="text-xs font-medium text-muted-foreground">
+            GSTIN
+          </label>
           <Input
             value={party.gstin}
             onChange={(e) => field("gstin", e.target.value)}
@@ -312,7 +314,9 @@ function PartyFormFields({
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-muted-foreground">State</label>
+          <label className="text-xs font-medium text-muted-foreground">
+            State
+          </label>
           <Input
             value={party.state}
             onChange={(e) => field("state", e.target.value)}
@@ -321,7 +325,9 @@ function PartyFormFields({
           />
         </div>
         <div className="col-span-2 flex flex-col gap-1">
-          <label className="text-xs font-medium text-muted-foreground">Address</label>
+          <label className="text-xs font-medium text-muted-foreground">
+            Address
+          </label>
           <Input
             value={party.address}
             onChange={(e) => field("address", e.target.value)}
@@ -330,7 +336,9 @@ function PartyFormFields({
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-muted-foreground">Email</label>
+          <label className="text-xs font-medium text-muted-foreground">
+            Email
+          </label>
           <Input
             value={party.emailPrimary}
             onChange={(e) => field("emailPrimary", e.target.value)}
@@ -339,7 +347,9 @@ function PartyFormFields({
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-muted-foreground">Email 2</label>
+          <label className="text-xs font-medium text-muted-foreground">
+            Email 2
+          </label>
           <Input
             value={party.emailSecondary}
             onChange={(e) => field("emailSecondary", e.target.value)}
@@ -348,7 +358,9 @@ function PartyFormFields({
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-muted-foreground">Phone</label>
+          <label className="text-xs font-medium text-muted-foreground">
+            Phone
+          </label>
           <Input
             value={party.phonePrimary}
             onChange={(e) => field("phonePrimary", e.target.value)}
@@ -357,7 +369,9 @@ function PartyFormFields({
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-muted-foreground">Phone 2</label>
+          <label className="text-xs font-medium text-muted-foreground">
+            Phone 2
+          </label>
           <Input
             value={party.phoneSecondary}
             onChange={(e) => field("phoneSecondary", e.target.value)}
@@ -366,7 +380,9 @@ function PartyFormFields({
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-muted-foreground">Landline</label>
+          <label className="text-xs font-medium text-muted-foreground">
+            Landline
+          </label>
           <Input
             value={party.phoneLandline}
             onChange={(e) => field("phoneLandline", e.target.value)}
@@ -399,6 +415,8 @@ export default function NewInvoice() {
   >(null)
   const [invoiceNumber, setInvoiceNumber] = React.useState("")
   const [invoiceDate, setInvoiceDate] = React.useState<Date>(new Date())
+  const [transportMode, setTransportMode] = React.useState("")
+  const [vehicleNumber, setVehicleNumber] = React.useState("")
   const [calendarOpen, setCalendarOpen] = React.useState(false)
 
   const [billTo, setBillTo] = React.useState<PartyForm>(emptyParty())
@@ -413,17 +431,44 @@ export default function NewInvoice() {
   type LineItem = {
     id: string
     description: string
+    hsnSac: string
     quantity: string
     rate: string
   }
+
+  type OtherCharge = {
+    id: string
+    description: string
+    amount: string
+  }
+
   const [lineItems, setLineItems] = React.useState<LineItem[]>([
-    { id: crypto.randomUUID(), description: "", quantity: "", rate: "" },
+    {
+      id: crypto.randomUUID(),
+      description: "",
+      hsnSac: "",
+      quantity: "",
+      rate: "",
+    },
+  ])
+  const [otherCharges, setOtherCharges] = React.useState<OtherCharge[]>([
+    {
+      id: crypto.randomUUID(),
+      description: "",
+      amount: "",
+    },
   ])
 
   function addRow() {
     setLineItems((prev) => [
       ...prev,
-      { id: crypto.randomUUID(), description: "", quantity: "", rate: "" },
+      {
+        id: crypto.randomUUID(),
+        description: "",
+        hsnSac: "",
+        quantity: "",
+        rate: "",
+      },
     ])
   }
 
@@ -441,16 +486,48 @@ export default function NewInvoice() {
     )
   }
 
+  function addOtherCharge() {
+    setOtherCharges((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        description: "",
+        amount: "",
+      },
+    ])
+  }
+
+  function removeOtherCharge(id: string) {
+    setOtherCharges((prev) => prev.filter((charge) => charge.id !== id))
+  }
+
+  function updateOtherCharge(
+    id: string,
+    field: keyof Omit<OtherCharge, "id">,
+    value: string
+  ) {
+    setOtherCharges((prev) =>
+      prev.map((charge) =>
+        charge.id === id ? { ...charge, [field]: value } : charge
+      )
+    )
+  }
+
   const subtotal = lineItems.reduce((sum, r) => {
     return sum + (parseFloat(r.quantity) || 0) * (parseFloat(r.rate) || 0)
+  }, 0)
+  const otherChargesTotal = otherCharges.reduce((sum, charge) => {
+    return sum + (parseFloat(charge.amount) || 0)
   }, 0)
 
   const [cgstPct, setCgstPct] = React.useState("")
   const [sgstPct, setSgstPct] = React.useState("")
+  const [igstPct, setIgstPct] = React.useState("")
 
   const cgstAmt = subtotal * ((parseFloat(cgstPct) || 0) / 100)
   const sgstAmt = subtotal * ((parseFloat(sgstPct) || 0) / 100)
-  const exactTotal = subtotal + cgstAmt + sgstAmt
+  const igstAmt = subtotal * ((parseFloat(igstPct) || 0) / 100)
+  const exactTotal = subtotal + otherChargesTotal + cgstAmt + sgstAmt + igstAmt
   const grandTotal = Math.ceil(exactTotal)
   const roundedOff = grandTotal - exactTotal
 
@@ -495,15 +572,25 @@ export default function NewInvoice() {
     setSaveError(null)
     setSaving(true)
     try {
+      const parsedOtherCharges = otherCharges
+        .map((charge) => ({
+          description: charge.description.trim(),
+          amount: parseFloat(charge.amount) || 0,
+        }))
+        .filter((charge) => charge.description || charge.amount > 0)
+
       const billedItems = JSON.stringify({
         items: lineItems.map((r) => ({
           description: r.description,
+          hsn_sac: r.hsnSac.trim(),
           quantity: parseFloat(r.quantity) || 0,
           rate: parseFloat(r.rate) || 0,
           amount: (parseFloat(r.quantity) || 0) * (parseFloat(r.rate) || 0),
         })),
+        other_charges: parsedOtherCharges,
         cgst_percentage: parseFloat(cgstPct) || 0,
         sgst_percentage: parseFloat(sgstPct) || 0,
+        igst_percentage: parseFloat(igstPct) || 0,
       })
 
       const pad = (n: number) => String(n).padStart(2, "0")
@@ -517,6 +604,8 @@ export default function NewInvoice() {
         ship_same_as_bill: shipSameAsBill ? 1 : 0,
         invoice_number: invoiceNumber.trim(),
         invoice_date: localDate,
+        transport_mode: transportMode.trim(),
+        vehicle_number: vehicleNumber.trim(),
         billed_items: billedItems,
       })
 
@@ -621,7 +710,10 @@ export default function NewInvoice() {
                     if (same) setShipTo(billTo)
                   }}
                 />
-                <Label htmlFor="ship-same" className="text-xs text-muted-foreground cursor-pointer">
+                <Label
+                  htmlFor="ship-same"
+                  className="cursor-pointer text-xs text-muted-foreground"
+                >
                   Same as Bill To
                 </Label>
               </div>
@@ -629,11 +721,17 @@ export default function NewInvoice() {
             {shipSameAsBill ? (
               billTo.name ? (
                 <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-2.5 text-sm text-muted-foreground">
-                  <span className="font-medium text-foreground">{billTo.name}</span>
-                  {billTo.address && <p className="mt-0.5 text-xs">{billTo.address}</p>}
+                  <span className="font-medium text-foreground">
+                    {billTo.name}
+                  </span>
+                  {billTo.address && (
+                    <p className="mt-0.5 text-xs">{billTo.address}</p>
+                  )}
                 </div>
               ) : (
-                <p className="text-xs text-muted-foreground">Fill in Bill To first.</p>
+                <p className="text-xs text-muted-foreground">
+                  Fill in Bill To first.
+                </p>
               )
             ) : (
               <PartyFormFields
@@ -699,6 +797,24 @@ export default function NewInvoice() {
               )}
             </div>
           </div>
+
+          <div>
+            <FieldLabel>Transport Mode</FieldLabel>
+            <Input
+              value={transportMode}
+              onChange={(e) => setTransportMode(e.target.value)}
+              placeholder="Road / Air / Rail"
+            />
+          </div>
+
+          <div>
+            <FieldLabel>Vehicle Number</FieldLabel>
+            <Input
+              value={vehicleNumber}
+              onChange={(e) => setVehicleNumber(e.target.value)}
+              placeholder="KL-07-AB-1234"
+            />
+          </div>
         </div>
         {/* ── end Grid 2 ── */}
       </div>
@@ -713,6 +829,7 @@ export default function NewInvoice() {
               <tr className="border-b border-border bg-muted/40 text-left text-xs font-medium text-muted-foreground">
                 <th className="w-12 px-3 py-2.5">#</th>
                 <th className="px-3 py-2.5">Description</th>
+                <th className="w-32 px-3 py-2.5">HSN/SAC</th>
                 <th className="w-28 px-3 py-2.5">Quantity</th>
                 <th className="w-28 px-3 py-2.5">Rate</th>
                 <th className="w-32 px-3 py-2.5">Amount</th>
@@ -739,6 +856,16 @@ export default function NewInvoice() {
                           updateRow(row.id, "description", e.target.value)
                         }
                         placeholder="Item description"
+                        className="h-8 border border-transparent bg-transparent shadow-none hover:border-border focus:border-border focus:bg-input/20 focus-visible:ring-0 dark:bg-transparent dark:focus:bg-input/30"
+                      />
+                    </td>
+                    <td className="px-3 py-1.5">
+                      <Input
+                        value={row.hsnSac}
+                        onChange={(e) =>
+                          updateRow(row.id, "hsnSac", e.target.value)
+                        }
+                        placeholder="9983"
                         className="h-8 border border-transparent bg-transparent shadow-none hover:border-border focus:border-border focus:bg-input/20 focus-visible:ring-0 dark:bg-transparent dark:focus:bg-input/30"
                       />
                     </td>
@@ -802,6 +929,90 @@ export default function NewInvoice() {
           </span>
         </Button>
 
+        {/* ── Other Charges ── */}
+        <div className="mt-6">
+          <h3 className="mb-3 text-sm font-semibold">Other Charges</h3>
+
+          <div className="overflow-x-auto rounded-md border border-border">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-muted/40 text-left text-xs font-medium text-muted-foreground">
+                  <th className="w-12 px-3 py-2.5">#</th>
+                  <th className="px-3 py-2.5">Charge</th>
+                  <th className="w-40 px-3 py-2.5">Amount</th>
+                  <th className="w-10 px-3 py-2.5" />
+                </tr>
+              </thead>
+              <tbody>
+                {otherCharges.map((charge, idx) => {
+                  const amount = parseFloat(charge.amount) || 0
+                  return (
+                    <tr
+                      key={charge.id}
+                      className="border-b border-border/60 last:border-0"
+                    >
+                      <td className="px-3 py-1.5 text-muted-foreground">
+                        {idx + 1}
+                      </td>
+                      <td className="px-3 py-1.5">
+                        <Input
+                          value={charge.description}
+                          onChange={(e) =>
+                            updateOtherCharge(
+                              charge.id,
+                              "description",
+                              e.target.value
+                            )
+                          }
+                          placeholder="Packing / Delivery / Misc"
+                          className="h-8 border border-transparent bg-transparent shadow-none hover:border-border focus:border-border focus:bg-input/20 focus-visible:ring-0 dark:bg-transparent dark:focus:bg-input/30"
+                        />
+                      </td>
+                      <td className="px-3 py-1.5">
+                        <Input
+                          type="number"
+                          value={charge.amount}
+                          onChange={(e) =>
+                            updateOtherCharge(
+                              charge.id,
+                              "amount",
+                              e.target.value
+                            )
+                          }
+                          placeholder="0.00"
+                          className="h-8"
+                        />
+                      </td>
+                      <td className="px-3 py-1.5">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-7 text-muted-foreground hover:text-destructive"
+                          onClick={() => removeOtherCharge(charge.id)}
+                          disabled={otherCharges.length === 1}
+                        >
+                          <Trash2Icon className="size-3.5" />
+                        </Button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <Button
+            variant="ghost"
+            onClick={addOtherCharge}
+            className="group mt-0 w-full rounded-t-none rounded-b-md border border-dashed border-border/60 py-2 text-xs text-muted-foreground transition-colors hover:border-primary hover:bg-muted/30"
+          >
+            <span className="flex items-center justify-center gap-1.5 group-hover:text-primary">
+              <PlusIcon className="size-3.5" />
+              Add charge
+            </span>
+          </Button>
+        </div>
+
         {/* ── Tax summary ── */}
         <div className="mt-4 flex flex-col items-end gap-1.5">
           {/* CGST */}
@@ -846,6 +1057,30 @@ export default function NewInvoice() {
             <span className="text-muted-foreground">%</span>
             <span className="w-32 text-right font-mono text-sm">
               {sgstAmt.toLocaleString("en-IN", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </span>
+          </div>
+
+          {/* IGST */}
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-muted-foreground">IGST @</span>
+            <Input
+              type="number"
+              min="0"
+              value={igstPct}
+              onChange={(e) =>
+                setIgstPct(
+                  Math.max(0, parseFloat(e.target.value) || 0).toString()
+                )
+              }
+              placeholder="0"
+              className="h-7 w-16 text-center"
+            />
+            <span className="text-muted-foreground">%</span>
+            <span className="w-32 text-right font-mono text-sm">
+              {igstAmt.toLocaleString("en-IN", {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
               })}

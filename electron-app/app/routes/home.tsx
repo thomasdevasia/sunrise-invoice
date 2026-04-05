@@ -25,23 +25,24 @@ import {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Company = { id: string; name: string }
-type Client = { id: string; name: string }
 
 type BilledItems = {
   items: {
     description: string
+    hsn_sac?: string
     quantity: number
     rate: number
     amount: number
   }[]
   cgst_percentage: number
   sgst_percentage: number
+  igst_percentage?: number
 }
 
 type InvoiceRow = {
   id: string
   company_id: string
-  client_id: string
+  bill_to: string
   invoice_number: string
   invoice_date: string
   billed_items: string
@@ -55,7 +56,8 @@ function grandTotal(billedItemsJson: string): number {
     const subtotal = parsed.items.reduce((s, i) => s + i.amount, 0)
     const cgst = subtotal * ((parsed.cgst_percentage ?? 0) / 100)
     const sgst = subtotal * ((parsed.sgst_percentage ?? 0) / 100)
-    return Math.ceil(subtotal + cgst + sgst)
+    const igst = subtotal * ((parsed.igst_percentage ?? 0) / 100)
+    return Math.ceil(subtotal + cgst + sgst + igst)
   } catch {
     return 0
   }
@@ -68,6 +70,15 @@ function formatDate(iso: string): string {
     return `${d} ${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][parseInt(m, 10) - 1]} ${y}`
   } catch {
     return iso
+  }
+}
+
+function getBillToName(billToJson: string): string {
+  try {
+    const parsed = JSON.parse(billToJson) as { name?: string }
+    return parsed.name?.trim() || "—"
+  } catch {
+    return "—"
   }
 }
 
@@ -116,11 +127,6 @@ export default function Home() {
     queryFn: () => window.electronAPI.companies.getAll(),
   })
 
-  const { data: clients = [] } = useQuery<Client[]>({
-    queryKey: ["clients"],
-    queryFn: () => window.electronAPI.clients.getAll(),
-  })
-
   const { data, isLoading } = useQuery({
     queryKey: ["invoices", 1, 5],
     queryFn: () =>
@@ -132,10 +138,6 @@ export default function Home() {
   const companyMap = React.useMemo(
     () => Object.fromEntries(companies.map((c) => [c.id, c.name])),
     [companies]
-  )
-  const clientMap = React.useMemo(
-    () => Object.fromEntries(clients.map((c) => [c.id, c.name])),
-    [clients]
   )
 
   return (
@@ -199,13 +201,17 @@ export default function Home() {
             </TableHeader>
             <TableBody>
               {invoices.map((inv) => (
-                <TableRow key={inv.id} className="group cursor-pointer" onClick={() => navigate(`/invoices/${inv.id}`)}>
+                <TableRow
+                  key={inv.id}
+                  className="group cursor-pointer"
+                  onClick={() => navigate(`/invoices/${inv.id}`)}
+                >
                   <TableCell className="font-medium">
                     {inv.invoice_number}
                   </TableCell>
                   <TableCell>{formatDate(inv.invoice_date)}</TableCell>
                   <TableCell>{companyMap[inv.company_id] ?? "—"}</TableCell>
-                  <TableCell>{clientMap[inv.client_id] ?? "—"}</TableCell>
+                  <TableCell>{getBillToName(inv.bill_to)}</TableCell>
                   <TableCell className="text-right">
                     {formatCurrency(grandTotal(inv.billed_items))}
                   </TableCell>

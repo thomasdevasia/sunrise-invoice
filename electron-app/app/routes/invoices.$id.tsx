@@ -95,12 +95,18 @@ type PartyForm = {
 type BilledItems = {
   items: {
     description: string
+    hsn_sac?: string
     quantity: number
     rate: number
     amount: number
   }[]
+  other_charges?: {
+    description: string
+    amount: number
+  }[]
   cgst_percentage: number
   sgst_percentage: number
+  igst_percentage?: number
 }
 
 // ─── IPC helpers ─────────────────────────────────────────────────────────────
@@ -439,19 +445,43 @@ export default function EditInvoice() {
   const [shipSameAsBill, setShipSameAsBill] = React.useState(true)
   const [invoiceNumber, setInvoiceNumber] = React.useState("")
   const [invoiceDate, setInvoiceDate] = React.useState<Date>(new Date())
+  const [transportMode, setTransportMode] = React.useState("")
+  const [vehicleNumber, setVehicleNumber] = React.useState("")
   const [calendarOpen, setCalendarOpen] = React.useState(false)
 
   type LineItem = {
     id: string
     description: string
+    hsnSac: string
     quantity: string
     rate: string
   }
+
+  type OtherCharge = {
+    id: string
+    description: string
+    amount: string
+  }
+
   const [lineItems, setLineItems] = React.useState<LineItem[]>([
-    { id: crypto.randomUUID(), description: "", quantity: "", rate: "" },
+    {
+      id: crypto.randomUUID(),
+      description: "",
+      hsnSac: "",
+      quantity: "",
+      rate: "",
+    },
+  ])
+  const [otherCharges, setOtherCharges] = React.useState<OtherCharge[]>([
+    {
+      id: crypto.randomUUID(),
+      description: "",
+      amount: "",
+    },
   ])
   const [cgstPct, setCgstPct] = React.useState("")
   const [sgstPct, setSgstPct] = React.useState("")
+  const [igstPct, setIgstPct] = React.useState("")
 
   function onBillToChange(updated: PartyForm) {
     setBillTo(updated)
@@ -479,21 +509,42 @@ export default function EditInvoice() {
       const [y, m, d] = invoice.invoice_date.split("-").map(Number)
       setInvoiceDate(new Date(y, m - 1, d))
     }
+    setTransportMode(invoice.transport_mode ?? "")
+    setVehicleNumber(invoice.vehicle_number ?? "")
     try {
       const parsed = JSON.parse(invoice.billed_items) as BilledItems
       setLineItems(
         parsed.items.map((item) => ({
           id: crypto.randomUUID(),
           description: item.description,
+          hsnSac: item.hsn_sac ?? "",
           quantity: String(item.quantity),
           rate: String(item.rate),
         }))
+      )
+      setOtherCharges(
+        parsed.other_charges && parsed.other_charges.length > 0
+          ? parsed.other_charges.map((charge) => ({
+              id: crypto.randomUUID(),
+              description: charge.description,
+              amount: String(charge.amount),
+            }))
+          : [
+              {
+                id: crypto.randomUUID(),
+                description: "",
+                amount: "",
+              },
+            ]
       )
       setCgstPct(
         parsed.cgst_percentage > 0 ? String(parsed.cgst_percentage) : ""
       )
       setSgstPct(
         parsed.sgst_percentage > 0 ? String(parsed.sgst_percentage) : ""
+      )
+      setIgstPct(
+        (parsed.igst_percentage ?? 0) > 0 ? String(parsed.igst_percentage) : ""
       )
     } catch {
       // leave defaults
@@ -506,9 +557,14 @@ export default function EditInvoice() {
     (sum, r) => sum + (parseFloat(r.quantity) || 0) * (parseFloat(r.rate) || 0),
     0
   )
+  const otherChargesTotal = otherCharges.reduce(
+    (sum, charge) => sum + (parseFloat(charge.amount) || 0),
+    0
+  )
   const cgstAmt = subtotal * ((parseFloat(cgstPct) || 0) / 100)
   const sgstAmt = subtotal * ((parseFloat(sgstPct) || 0) / 100)
-  const exactTotal = subtotal + cgstAmt + sgstAmt
+  const igstAmt = subtotal * ((parseFloat(igstPct) || 0) / 100)
+  const exactTotal = subtotal + otherChargesTotal + cgstAmt + sgstAmt + igstAmt
   const grandTotal = Math.ceil(exactTotal)
   const roundedOff = grandTotal - exactTotal
 
@@ -521,7 +577,13 @@ export default function EditInvoice() {
   function addRow() {
     setLineItems((prev) => [
       ...prev,
-      { id: crypto.randomUUID(), description: "", quantity: "", rate: "" },
+      {
+        id: crypto.randomUUID(),
+        description: "",
+        hsnSac: "",
+        quantity: "",
+        rate: "",
+      },
     ])
   }
 
@@ -536,6 +598,33 @@ export default function EditInvoice() {
   ) {
     setLineItems((prev) =>
       prev.map((r) => (r.id === rowId ? { ...r, [field]: value } : r))
+    )
+  }
+
+  function addOtherCharge() {
+    setOtherCharges((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        description: "",
+        amount: "",
+      },
+    ])
+  }
+
+  function removeOtherCharge(chargeId: string) {
+    setOtherCharges((prev) => prev.filter((charge) => charge.id !== chargeId))
+  }
+
+  function updateOtherCharge(
+    chargeId: string,
+    field: keyof Omit<OtherCharge, "id">,
+    value: string
+  ) {
+    setOtherCharges((prev) =>
+      prev.map((charge) =>
+        charge.id === chargeId ? { ...charge, [field]: value } : charge
+      )
     )
   }
 
@@ -573,15 +662,25 @@ export default function EditInvoice() {
 
     setSaving(true)
     try {
+      const parsedOtherCharges = otherCharges
+        .map((charge) => ({
+          description: charge.description.trim(),
+          amount: parseFloat(charge.amount) || 0,
+        }))
+        .filter((charge) => charge.description || charge.amount > 0)
+
       const billedItems = JSON.stringify({
         items: lineItems.map((r) => ({
           description: r.description,
+          hsn_sac: r.hsnSac.trim(),
           quantity: parseFloat(r.quantity) || 0,
           rate: parseFloat(r.rate) || 0,
           amount: (parseFloat(r.quantity) || 0) * (parseFloat(r.rate) || 0),
         })),
+        other_charges: parsedOtherCharges,
         cgst_percentage: parseFloat(cgstPct) || 0,
         sgst_percentage: parseFloat(sgstPct) || 0,
+        igst_percentage: parseFloat(igstPct) || 0,
       })
 
       const pad = (n: number) => String(n).padStart(2, "0")
@@ -595,6 +694,8 @@ export default function EditInvoice() {
         ship_same_as_bill: shipSameAsBill ? 1 : 0,
         invoice_number: invoiceNumber.trim(),
         invoice_date: localDate,
+        transport_mode: transportMode.trim(),
+        vehicle_number: vehicleNumber.trim(),
         billed_items: billedItems,
       })
 
@@ -619,9 +720,18 @@ export default function EditInvoice() {
       shipTo: effectiveShipTo,
       invoiceNumber,
       invoiceDate,
+      transportMode,
+      vehicleNumber,
       lineItems,
+      otherCharges: otherCharges
+        .map((charge) => ({
+          description: charge.description.trim(),
+          amount: parseFloat(charge.amount) || 0,
+        }))
+        .filter((charge) => charge.description || charge.amount > 0),
       cgstPct,
       sgstPct,
+      igstPct,
     }
   }
 
@@ -945,6 +1055,24 @@ export default function EditInvoice() {
               )}
             </div>
           </div>
+
+          <div>
+            <FieldLabel>Transport Mode</FieldLabel>
+            <Input
+              value={transportMode}
+              onChange={(e) => setTransportMode(e.target.value)}
+              placeholder="Road / Air / Rail"
+            />
+          </div>
+
+          <div>
+            <FieldLabel>Vehicle Number</FieldLabel>
+            <Input
+              value={vehicleNumber}
+              onChange={(e) => setVehicleNumber(e.target.value)}
+              placeholder="KL-07-AB-1234"
+            />
+          </div>
         </div>
       </div>
 
@@ -958,6 +1086,7 @@ export default function EditInvoice() {
               <tr className="border-b border-border bg-muted/40 text-left text-xs font-medium text-muted-foreground">
                 <th className="w-12 px-3 py-2.5">#</th>
                 <th className="px-3 py-2.5">Description</th>
+                <th className="w-32 px-3 py-2.5">HSN/SAC</th>
                 <th className="w-28 px-3 py-2.5">Quantity</th>
                 <th className="w-28 px-3 py-2.5">Rate</th>
                 <th className="w-32 px-3 py-2.5">Amount</th>
@@ -984,6 +1113,16 @@ export default function EditInvoice() {
                           updateRow(row.id, "description", e.target.value)
                         }
                         placeholder="Item description"
+                        className="h-8 border border-transparent bg-transparent shadow-none hover:border-border focus:border-border focus:bg-input/20 focus-visible:ring-0 dark:bg-transparent dark:focus:bg-input/30"
+                      />
+                    </td>
+                    <td className="px-3 py-1.5">
+                      <Input
+                        value={row.hsnSac}
+                        onChange={(e) =>
+                          updateRow(row.id, "hsnSac", e.target.value)
+                        }
+                        placeholder="9983"
                         className="h-8 border border-transparent bg-transparent shadow-none hover:border-border focus:border-border focus:bg-input/20 focus-visible:ring-0 dark:bg-transparent dark:focus:bg-input/30"
                       />
                     </td>
@@ -1047,6 +1186,83 @@ export default function EditInvoice() {
           </span>
         </Button>
 
+        {/* Other Charges */}
+        <div className="mt-6">
+          <h3 className="mb-3 text-sm font-semibold">Other Charges</h3>
+
+          <div className="overflow-x-auto rounded-md border border-border">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-muted/40 text-left text-xs font-medium text-muted-foreground">
+                  <th className="w-12 px-3 py-2.5">#</th>
+                  <th className="px-3 py-2.5">Charge</th>
+                  <th className="w-40 px-3 py-2.5">Amount</th>
+                  <th className="w-10 px-3 py-2.5" />
+                </tr>
+              </thead>
+              <tbody>
+                {otherCharges.map((charge, idx) => (
+                  <tr
+                    key={charge.id}
+                    className="border-b border-border/60 last:border-0"
+                  >
+                    <td className="px-3 py-1.5 text-muted-foreground">
+                      {idx + 1}
+                    </td>
+                    <td className="px-3 py-1.5">
+                      <Input
+                        value={charge.description}
+                        onChange={(e) =>
+                          updateOtherCharge(
+                            charge.id,
+                            "description",
+                            e.target.value
+                          )
+                        }
+                        placeholder="Packing / Delivery / Misc"
+                        className="h-8 border border-transparent bg-transparent shadow-none hover:border-border focus:border-border focus:bg-input/20 focus-visible:ring-0 dark:bg-transparent dark:focus:bg-input/30"
+                      />
+                    </td>
+                    <td className="px-3 py-1.5">
+                      <Input
+                        type="number"
+                        value={charge.amount}
+                        onChange={(e) =>
+                          updateOtherCharge(charge.id, "amount", e.target.value)
+                        }
+                        placeholder="0.00"
+                        className="h-8"
+                      />
+                    </td>
+                    <td className="px-3 py-1.5">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-7 text-muted-foreground hover:text-destructive"
+                        onClick={() => removeOtherCharge(charge.id)}
+                        disabled={otherCharges.length === 1}
+                      >
+                        <Trash2Icon className="size-3.5" />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <Button
+            variant="ghost"
+            onClick={addOtherCharge}
+            className="group mt-0 w-full rounded-t-none rounded-b-md border border-dashed border-border/60 py-2 text-xs text-muted-foreground transition-colors hover:border-primary hover:bg-muted/30"
+          >
+            <span className="flex items-center justify-center gap-1.5 group-hover:text-primary">
+              <PlusIcon className="size-3.5" />
+              Add charge
+            </span>
+          </Button>
+        </div>
+
         {/* Tax summary */}
         <div className="mt-4 flex flex-col items-end gap-1.5">
           {/* CGST */}
@@ -1091,6 +1307,30 @@ export default function EditInvoice() {
             <span className="text-muted-foreground">%</span>
             <span className="w-32 text-right font-mono text-sm">
               {sgstAmt.toLocaleString("en-IN", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </span>
+          </div>
+
+          {/* IGST */}
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-muted-foreground">IGST @</span>
+            <Input
+              type="number"
+              min="0"
+              value={igstPct}
+              onChange={(e) =>
+                setIgstPct(
+                  Math.max(0, parseFloat(e.target.value) || 0).toString()
+                )
+              }
+              placeholder="0"
+              className="h-7 w-16 text-center"
+            />
+            <span className="text-muted-foreground">%</span>
+            <span className="w-32 text-right font-mono text-sm">
+              {igstAmt.toLocaleString("en-IN", {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
               })}

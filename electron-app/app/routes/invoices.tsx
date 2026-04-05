@@ -52,12 +52,14 @@ type Company = { id: string; name: string; gstin: string }
 type BilledItems = {
   items: {
     description: string
+    hsn_sac?: string
     quantity: number
     rate: number
     amount: number
   }[]
   cgst_percentage: number
   sgst_percentage: number
+  igst_percentage?: number
 }
 
 type InvoiceRow = {
@@ -79,7 +81,8 @@ function grandTotal(billedItemsJson: string): number {
     const subtotal = parsed.items.reduce((s, i) => s + i.amount, 0)
     const cgst = subtotal * ((parsed.cgst_percentage ?? 0) / 100)
     const sgst = subtotal * ((parsed.sgst_percentage ?? 0) / 100)
-    return Math.ceil(subtotal + cgst + sgst)
+    const igst = subtotal * ((parsed.igst_percentage ?? 0) / 100)
+    return Math.ceil(subtotal + cgst + sgst + igst)
   } catch {
     return 0
   }
@@ -422,7 +425,14 @@ export default function Invoices() {
                 ) : (
                   invoices.map((inv: InvoiceRow) => {
                     const company = companyMap[inv.company_id]
-                    const billToName = (() => { try { return (JSON.parse(inv.bill_to) as { name: string }).name } catch { return "—" } })()
+                    const billToName = (() => {
+                      try {
+                        return (JSON.parse(inv.bill_to) as { name: string })
+                          .name
+                      } catch {
+                        return "—"
+                      }
+                    })()
                     const total = grandTotal(inv.billed_items)
                     return (
                       <TableRow
@@ -443,9 +453,7 @@ export default function Invoices() {
                             </span>
                           )}
                         </TableCell>
-                        <TableCell className="text-sm">
-                          {billToName}
-                        </TableCell>
+                        <TableCell className="text-sm">{billToName}</TableCell>
                         <TableCell className="text-right font-mono text-sm">
                           {formatCurrency(total)}
                         </TableCell>

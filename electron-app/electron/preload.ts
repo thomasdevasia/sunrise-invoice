@@ -60,7 +60,9 @@ export type InvoiceData = {
     ship_same_as_bill: number  // 0 or 1
     invoice_number: string
     invoice_date: string       // ISO 8601: "YYYY-MM-DD"
-    billed_items: string       // JSON: { items: [...], cgst_percentage, sgst_percentage }
+    transport_mode: string | null
+    vehicle_number: string | null
+    billed_items: string       // JSON: { items: [...], cgst_percentage, sgst_percentage, igst_percentage }
 }
 
 export type InvoiceFilter = {

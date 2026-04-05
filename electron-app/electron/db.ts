@@ -34,6 +34,7 @@ export type ClientRow = {
 
 export type BilledItem = {
     description: string
+    hsn_sac?: string
     quantity: number
     rate: number
     amount: number
@@ -43,6 +44,7 @@ export type BilledItems = {
     items: BilledItem[]
     cgst_percentage: number
     sgst_percentage: number
+    igst_percentage?: number
 }
 
 export type InvoiceRow = {
@@ -53,6 +55,8 @@ export type InvoiceRow = {
     ship_same_as_bill: number   // 0 or 1 (SQLite boolean)
     invoice_number: string
     invoice_date: string        // ISO 8601: "YYYY-MM-DD"
+    transport_mode: string | null
+    vehicle_number: string | null
     billed_items: string        // JSON-serialised BilledItems
     created_at?: string
     updated_at?: string
@@ -70,6 +74,18 @@ export function getDb(): Database.Database {
         migrate(_db)
     }
     return _db
+}
+
+function ensureColumn(
+    db: Database.Database,
+    table: string,
+    columnName: string,
+    columnDefinition: string
+) {
+    const columns = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>
+    if (!columns.some((column) => column.name === columnName)) {
+        db.exec(`ALTER TABLE ${table} ADD COLUMN ${columnDefinition}`)
+    }
 }
 
 function migrate(db: Database.Database) {
@@ -108,11 +124,16 @@ function migrate(db: Database.Database) {
       ship_same_as_bill   INTEGER NOT NULL DEFAULT 1,
       invoice_number      TEXT NOT NULL UNIQUE,
       invoice_date        TEXT NOT NULL,
+      transport_mode      TEXT,
+      vehicle_number      TEXT,
       billed_items        TEXT NOT NULL,
       created_at          TEXT DEFAULT CURRENT_TIMESTAMP,
       updated_at          TEXT DEFAULT CURRENT_TIMESTAMP
     );
   `)
+
+    ensureColumn(db, "invoices", "transport_mode", "transport_mode TEXT")
+    ensureColumn(db, "invoices", "vehicle_number", "vehicle_number TEXT")
 }
 
 // ─── CRUD ─────────────────────────────────────────────────────────────────────
@@ -290,9 +311,9 @@ export function createInvoice(data: InvoiceRow): InvoiceRow {
     getDb()
         .prepare(
             `INSERT INTO invoices
-         (id, company_id, bill_to, ship_to, ship_same_as_bill, invoice_number, invoice_date, billed_items, created_at, updated_at)
+         (id, company_id, bill_to, ship_to, ship_same_as_bill, invoice_number, invoice_date, transport_mode, vehicle_number, billed_items, created_at, updated_at)
        VALUES
-         (@id, @company_id, @bill_to, @ship_to, @ship_same_as_bill, @invoice_number, @invoice_date, @billed_items, @created_at, @updated_at)`
+         (@id, @company_id, @bill_to, @ship_to, @ship_same_as_bill, @invoice_number, @invoice_date, @transport_mode, @vehicle_number, @billed_items, @created_at, @updated_at)`
         )
         .run(insertData)
     return getDb()
@@ -312,6 +333,8 @@ export function updateInvoice(data: InvoiceRow): InvoiceRow {
          ship_same_as_bill = @ship_same_as_bill,
          invoice_number    = @invoice_number,
          invoice_date      = @invoice_date,
+         transport_mode    = @transport_mode,
+         vehicle_number    = @vehicle_number,
          billed_items      = @billed_items,
          updated_at        = @updated_at
         WHERE id = @id`
