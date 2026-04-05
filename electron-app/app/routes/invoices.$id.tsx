@@ -9,7 +9,6 @@ import {
   EyeIcon,
   PlusIcon,
   Trash2Icon,
-  UserIcon,
 } from "lucide-react"
 import { pdf } from "@react-pdf/renderer"
 import type { InvoicePDFProps } from "@/components/invoice-pdf"
@@ -29,6 +28,8 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
 import {
   Dialog,
   DialogContent,
@@ -46,6 +47,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Link } from "react-router"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -75,6 +77,19 @@ type Client = {
   gstin: string
   address: string
   state: string
+}
+
+type PartyForm = {
+  id?: string
+  name: string
+  gstin: string
+  address: string
+  state: string
+  emailPrimary: string
+  emailSecondary: string
+  phonePrimary: string
+  phoneSecondary: string
+  phoneLandline: string
 }
 
 type BilledItems = {
@@ -134,6 +149,38 @@ async function fetchClients(): Promise<Client[]> {
   return (await window.electronAPI.clients.getAll()).map(clientFromRow)
 }
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function emptyParty(): PartyForm {
+  return {
+    id: undefined,
+    name: "",
+    gstin: "",
+    address: "",
+    state: "",
+    emailPrimary: "",
+    emailSecondary: "",
+    phonePrimary: "",
+    phoneSecondary: "",
+    phoneLandline: "",
+  }
+}
+
+function clientToParty(c: Client): PartyForm {
+  return {
+    id: c.id,
+    name: c.name,
+    gstin: c.gstin,
+    address: c.address,
+    state: c.state,
+    emailPrimary: c.emailPrimary,
+    emailSecondary: c.emailSecondary,
+    phonePrimary: c.phonePrimary,
+    phoneSecondary: c.phoneSecondary,
+    phoneLandline: c.phoneLandline,
+  }
+}
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
@@ -142,31 +189,18 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
   )
 }
 
-function DetailBadge({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-      <span className="font-medium text-foreground/70">{label}:</span>
-      <span>{value}</span>
-    </div>
-  )
-}
-
 function EntityDetails({
   icon: Icon,
   entity,
 }: {
   icon: React.ElementType
-  entity: Company | Client
+  entity: Company
 }) {
   const rows = [
     { label: "GSTIN", value: entity.gstin },
-    { label: "PAN", value: (entity as Company).pan },
+    { label: "PAN", value: entity.pan },
     { label: "Email", value: entity.emailPrimary },
-    { label: "Email 2", value: entity.emailSecondary },
     { label: "Phone", value: entity.phonePrimary },
-    { label: "Phone 2", value: entity.phoneSecondary },
-    { label: "Landline", value: entity.phoneLandline },
-    { label: "Website", value: (entity as Company).website },
     { label: "Address", value: entity.address },
     { label: "State", value: entity.state },
   ].filter((r) => r.value)
@@ -179,8 +213,182 @@ function EntityDetails({
       </div>
       <div className="flex flex-col gap-1">
         {rows.map((r) => (
-          <DetailBadge key={r.label} label={r.label} value={r.value} />
+          <div
+            key={r.label}
+            className="flex items-center gap-2 text-xs text-muted-foreground"
+          >
+            <span className="font-medium text-foreground/70">{r.label}:</span>
+            <span>{r.value}</span>
+          </div>
         ))}
+      </div>
+    </div>
+  )
+}
+
+function PartyFormFields({
+  party,
+  onChange,
+  clients,
+  clientsLoading,
+  prefillLabel,
+}: {
+  party: PartyForm
+  onChange: (updated: PartyForm) => void
+  clients: Client[]
+  clientsLoading: boolean
+  prefillLabel: string
+}) {
+  function field(key: keyof Omit<PartyForm, "id">, value: string) {
+    onChange({ ...party, [key]: value })
+  }
+
+  function onClientSelect(clientId: string | null) {
+    if (!clientId) {
+      onChange(emptyParty())
+      return
+    }
+    const c = clients.find((c) => c.id === clientId)
+    if (c) onChange(clientToParty(c))
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {clientsLoading ? (
+        <Skeleton className="h-9 w-full rounded-md" />
+      ) : clients.length === 0 ? (
+        <p className="text-xs text-muted-foreground">
+          No clients found.{" "}
+          <Link
+            to="/clients"
+            className="underline underline-offset-2 hover:text-foreground"
+          >
+            Add a client first.
+          </Link>
+        </p>
+      ) : (
+        <Combobox
+          value={party.id ?? null}
+          onValueChange={(val) => onClientSelect(val as string | null)}
+          items={clients.map((c) => c.id)}
+          itemToStringLabel={(id) =>
+            clients.find((c) => c.id === id)?.name ?? ""
+          }
+        >
+          <ComboboxInput
+            className="w-full"
+            placeholder={prefillLabel}
+            showClear={!!party.id}
+          />
+          <ComboboxContent>
+            <ComboboxList>
+              <ComboboxEmpty>No clients found.</ComboboxEmpty>
+              {clients.map((client) => (
+                <ComboboxItem key={client.id} value={client.id}>
+                  <span className="font-medium">{client.name}</span>
+                  {client.gstin && (
+                    <span className="ml-1 text-muted-foreground">
+                      ({client.gstin})
+                    </span>
+                  )}
+                </ComboboxItem>
+              ))}
+            </ComboboxList>
+          </ComboboxContent>
+        </Combobox>
+      )}
+
+      <div className="grid grid-cols-2 gap-x-2 gap-y-3">
+        <div className="col-span-2 flex flex-col gap-1">
+          <label className="text-xs font-medium text-muted-foreground">
+            Name <span className="text-destructive">*</span>
+          </label>
+          <Input
+            value={party.name}
+            onChange={(e) => field("name", e.target.value)}
+            placeholder="Full name"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-muted-foreground">
+            GSTIN
+          </label>
+          <Input
+            value={party.gstin}
+            onChange={(e) => field("gstin", e.target.value)}
+            placeholder="22AAAAA0000A1Z5"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-muted-foreground">
+            State
+          </label>
+          <Input
+            value={party.state}
+            onChange={(e) => field("state", e.target.value)}
+            placeholder="e.g. Kerala"
+          />
+        </div>
+        <div className="col-span-2 flex flex-col gap-1">
+          <label className="text-xs font-medium text-muted-foreground">
+            Address
+          </label>
+          <Input
+            value={party.address}
+            onChange={(e) => field("address", e.target.value)}
+            placeholder="Street, City, PIN"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-muted-foreground">
+            Email
+          </label>
+          <Input
+            value={party.emailPrimary}
+            onChange={(e) => field("emailPrimary", e.target.value)}
+            placeholder="primary@email.com"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-muted-foreground">
+            Email 2
+          </label>
+          <Input
+            value={party.emailSecondary}
+            onChange={(e) => field("emailSecondary", e.target.value)}
+            placeholder="secondary@email.com"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-muted-foreground">
+            Phone
+          </label>
+          <Input
+            value={party.phonePrimary}
+            onChange={(e) => field("phonePrimary", e.target.value)}
+            placeholder="+91 98765 43210"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-muted-foreground">
+            Phone 2
+          </label>
+          <Input
+            value={party.phoneSecondary}
+            onChange={(e) => field("phoneSecondary", e.target.value)}
+            placeholder="+91 98765 43210"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-muted-foreground">
+            Landline
+          </label>
+          <Input
+            value={party.phoneLandline}
+            onChange={(e) => field("phoneLandline", e.target.value)}
+            placeholder="0484-123456"
+          />
+        </div>
       </div>
     </div>
   )
@@ -217,9 +425,9 @@ export default function EditInvoice() {
   const [selectedCompanyId, setSelectedCompanyId] = React.useState<
     string | null
   >(null)
-  const [selectedClientId, setSelectedClientId] = React.useState<string | null>(
-    null
-  )
+  const [billTo, setBillTo] = React.useState<PartyForm>(emptyParty())
+  const [shipTo, setShipTo] = React.useState<PartyForm>(emptyParty())
+  const [shipSameAsBill, setShipSameAsBill] = React.useState(true)
   const [invoiceNumber, setInvoiceNumber] = React.useState("")
   const [invoiceDate, setInvoiceDate] = React.useState<Date>(new Date())
   const [calendarOpen, setCalendarOpen] = React.useState(false)
@@ -236,12 +444,27 @@ export default function EditInvoice() {
   const [cgstPct, setCgstPct] = React.useState("")
   const [sgstPct, setSgstPct] = React.useState("")
 
+  function onBillToChange(updated: PartyForm) {
+    setBillTo(updated)
+    if (shipSameAsBill) setShipTo(updated)
+  }
+
   // ── Seed form from loaded invoice ──
   const [seeded, setSeeded] = React.useState(false)
   React.useEffect(() => {
     if (!invoice || seeded) return
     setSelectedCompanyId(invoice.company_id)
-    setSelectedClientId(invoice.client_id)
+
+    try {
+      const parsedBillTo = JSON.parse(invoice.bill_to) as PartyForm
+      const parsedShipTo = JSON.parse(invoice.ship_to) as PartyForm
+      setBillTo(parsedBillTo)
+      setShipTo(parsedShipTo)
+      setShipSameAsBill(invoice.ship_same_as_bill === 1)
+    } catch {
+      // leave defaults
+    }
+
     setInvoiceNumber(invoice.invoice_number)
     if (invoice.invoice_date) {
       const [y, m, d] = invoice.invoice_date.split("-").map(Number)
@@ -284,10 +507,6 @@ export default function EditInvoice() {
     () => companies.find((c) => c.id === selectedCompanyId),
     [companies, selectedCompanyId]
   )
-  const selectedClient = React.useMemo(
-    () => clients.find((c) => c.id === selectedClientId),
-    [clients, selectedClientId]
-  )
 
   // ── Line item helpers ──
   function addRow() {
@@ -326,13 +545,16 @@ export default function EditInvoice() {
     }
   }, [pdfOpen])
 
+  const effectiveBillTo = billTo
+  const effectiveShipTo = shipSameAsBill ? billTo : shipTo
+
   async function handleUpdate() {
     if (!selectedCompanyId) {
       toast.error("Please select a company.")
       return
     }
-    if (!selectedClientId) {
-      toast.error("Please select a client.")
+    if (!billTo.name.trim()) {
+      toast.error("Bill To name is required.")
       return
     }
     if (!invoiceNumber.trim()) {
@@ -359,7 +581,9 @@ export default function EditInvoice() {
       await window.electronAPI.invoices.update({
         id: id!,
         company_id: selectedCompanyId,
-        client_id: selectedClientId,
+        bill_to: JSON.stringify(effectiveBillTo),
+        ship_to: JSON.stringify(effectiveShipTo),
+        ship_same_as_bill: shipSameAsBill ? 1 : 0,
         invoice_number: invoiceNumber.trim(),
         invoice_date: localDate,
         billed_items: billedItems,
@@ -378,21 +602,27 @@ export default function EditInvoice() {
     }
   }
 
+  function buildPdfProps(): InvoicePDFProps | null {
+    if (!selectedCompany) return null
+    return {
+      company: selectedCompany,
+      billTo: effectiveBillTo,
+      shipTo: effectiveShipTo,
+      invoiceNumber,
+      invoiceDate,
+      lineItems,
+      cgstPct,
+      sgstPct,
+    }
+  }
+
   async function handleViewPdf() {
-    if (!selectedCompany || !selectedClient) {
-      toast.error("Please select a company and client before viewing.")
+    const props = buildPdfProps()
+    if (!props) {
+      toast.error("Please select a company before viewing.")
       return
     }
     try {
-      const props: InvoicePDFProps = {
-        company: selectedCompany,
-        client: selectedClient,
-        invoiceNumber,
-        invoiceDate,
-        lineItems,
-        cgstPct,
-        sgstPct,
-      }
       const blob = await pdf(<InvoicePDFDocument {...props} />).toBlob()
       const url = URL.createObjectURL(blob)
       setPdfUrl(url)
@@ -405,22 +635,14 @@ export default function EditInvoice() {
   }
 
   async function handleDownload() {
-    if (!selectedCompany || !selectedClient) {
-      toast.error("Please select a company and client before downloading.")
+    const props = buildPdfProps()
+    if (!props) {
+      toast.error("Please select a company before downloading.")
       return
     }
 
     setDownloading(true)
     try {
-      const props: InvoicePDFProps = {
-        company: selectedCompany,
-        client: selectedClient,
-        invoiceNumber,
-        invoiceDate,
-        lineItems,
-        cgstPct,
-        sgstPct,
-      }
       const blob = await pdf(<InvoicePDFDocument {...props} />).toBlob()
       const buffer = await blob.arrayBuffer()
       const result = await window.electronAPI.invoices.savePdf({
@@ -567,9 +789,9 @@ export default function EditInvoice() {
         </div>
       </div>
 
-      {/* ── Company + Client / Number + Date grid ── */}
+      {/* ── Company + Bill To + Ship To / Number + Date grid ── */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-        {/* Grid 1: Company + Client */}
+        {/* Grid 1: Company + Bill To + Ship To */}
         <div className="flex flex-col gap-6">
           {/* Company */}
           <div>
@@ -610,40 +832,63 @@ export default function EditInvoice() {
             )}
           </div>
 
-          {/* Client */}
+          {/* Bill To */}
           <div>
-            <FieldLabel>Client</FieldLabel>
-            <Combobox
-              value={selectedClientId}
-              onValueChange={(val) => setSelectedClientId(val as string | null)}
-              items={clients.map((c) => c.id)}
-              itemToStringLabel={(id) =>
-                clients.find((c) => c.id === id)?.name ?? ""
-              }
-            >
-              <ComboboxInput
-                className="w-full"
-                placeholder="Search client…"
-                showClear={!!selectedClientId}
+            <FieldLabel>Bill To</FieldLabel>
+            <PartyFormFields
+              party={billTo}
+              onChange={onBillToChange}
+              clients={clients}
+              clientsLoading={clientsLoading}
+              prefillLabel="Select client to pre-fill…"
+            />
+          </div>
+
+          {/* Ship To */}
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <FieldLabel>Ship To</FieldLabel>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="ship-same"
+                  checked={shipSameAsBill}
+                  onCheckedChange={(checked) => {
+                    const same = !!checked
+                    setShipSameAsBill(same)
+                    if (same) setShipTo(billTo)
+                  }}
+                />
+                <Label
+                  htmlFor="ship-same"
+                  className="cursor-pointer text-xs text-muted-foreground"
+                >
+                  Same as Bill To
+                </Label>
+              </div>
+            </div>
+            {shipSameAsBill ? (
+              billTo.name ? (
+                <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-2.5 text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">
+                    {billTo.name}
+                  </span>
+                  {billTo.address && (
+                    <p className="mt-0.5 text-xs">{billTo.address}</p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Fill in Bill To first.
+                </p>
+              )
+            ) : (
+              <PartyFormFields
+                party={shipTo}
+                onChange={setShipTo}
+                clients={clients}
+                clientsLoading={clientsLoading}
+                prefillLabel="Select client to pre-fill…"
               />
-              <ComboboxContent>
-                <ComboboxList>
-                  <ComboboxEmpty>No clients found.</ComboboxEmpty>
-                  {clients.map((client) => (
-                    <ComboboxItem key={client.id} value={client.id}>
-                      <span className="font-medium">{client.name}</span>
-                      {client.gstin && (
-                        <span className="ml-1 text-muted-foreground">
-                          ({client.gstin})
-                        </span>
-                      )}
-                    </ComboboxItem>
-                  ))}
-                </ComboboxList>
-              </ComboboxContent>
-            </Combobox>
-            {selectedClient && (
-              <EntityDetails icon={UserIcon} entity={selectedClient} />
             )}
           </div>
         </div>
@@ -881,7 +1126,7 @@ export default function EditInvoice() {
       {/* ── PDF Preview Dialog ── */}
       <Dialog open={pdfOpen} onOpenChange={setPdfOpen}>
         <DialogContent
-          className="w-[95vw] max-w-[95vw] sm:max-w-[95vw] h-[95vh] flex flex-col gap-3"
+          className="flex h-[95vh] w-[95vw] max-w-[95vw] flex-col gap-3 sm:max-w-[95vw]"
           showCloseButton
         >
           <DialogHeader>

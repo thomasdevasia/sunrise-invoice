@@ -16,7 +16,8 @@ export type InvoiceCompany = {
   state: string
 }
 
-export type InvoiceClient = {
+export type InvoiceParty = {
+  id?: string
   name: string
   emailPrimary: string
   emailSecondary: string
@@ -36,7 +37,8 @@ export type InvoiceLineItem = {
 
 export type InvoicePDFProps = {
   company: InvoiceCompany
-  client: InvoiceClient
+  billTo: InvoiceParty
+  shipTo: InvoiceParty
   invoiceNumber: string
   invoiceDate: Date
   lineItems: InvoiceLineItem[]
@@ -106,10 +108,20 @@ const styles = StyleSheet.create({
     padding: 8,
   },
 
-  // ── Buyer row
+  // ── Buyer row (split Bill To / Ship To)
   buyerRow: {
     borderBottomWidth: 0.5,
     borderBottomColor: B,
+    flexDirection: "row",
+  },
+  billToBox: {
+    flex: 1,
+    padding: 8,
+    borderRightWidth: 0.5,
+    borderRightColor: B,
+  },
+  shipToBox: {
+    flex: 1,
     padding: 8,
   },
 
@@ -417,7 +429,8 @@ function numberToWords(amount: number): string {
 
 export function InvoicePDFDocument({
   company,
-  client,
+  billTo,
+  shipTo,
   invoiceNumber,
   invoiceDate,
   lineItems,
@@ -443,14 +456,33 @@ export function InvoicePDFDocument({
     company.pan ? `PAN: ${company.pan}` : "",
     company.gstin ? `GSTIN: ${company.gstin}` : "",
     company.phonePrimary ? `Ph: ${company.phonePrimary}` : "",
+    company.phoneSecondary ? `Ph 2: ${company.phoneSecondary}` : "",
+    company.phoneLandline ? `Landline: ${company.phoneLandline}` : "",
     company.emailPrimary ? `Email: ${company.emailPrimary}` : "",
+    company.emailSecondary ? `Email 2: ${company.emailSecondary}` : "",
+    company.website ? `Web: ${company.website}` : "",
   ].filter(Boolean)
 
-  const clientDetailLines = [
-    client.address,
-    client.state ? `State: ${client.state}` : "",
-    client.gstin ? `GSTIN: ${client.gstin}` : "",
-    client.phonePrimary ? `Ph: ${client.phonePrimary}` : "",
+  const billToLines = [
+    billTo.address,
+    billTo.state ? `State: ${billTo.state}` : "",
+    billTo.gstin ? `GSTIN: ${billTo.gstin}` : "",
+    billTo.phonePrimary ? `Ph: ${billTo.phonePrimary}` : "",
+    billTo.phoneSecondary ? `Ph 2: ${billTo.phoneSecondary}` : "",
+    billTo.phoneLandline ? `Landline: ${billTo.phoneLandline}` : "",
+    billTo.emailPrimary ? `Email: ${billTo.emailPrimary}` : "",
+    billTo.emailSecondary ? `Email 2: ${billTo.emailSecondary}` : "",
+  ].filter(Boolean)
+
+  const shipToLines = [
+    shipTo.address,
+    shipTo.state ? `State: ${shipTo.state}` : "",
+    shipTo.gstin ? `GSTIN: ${shipTo.gstin}` : "",
+    shipTo.phonePrimary ? `Ph: ${shipTo.phonePrimary}` : "",
+    shipTo.phoneSecondary ? `Ph 2: ${shipTo.phoneSecondary}` : "",
+    shipTo.phoneLandline ? `Landline: ${shipTo.phoneLandline}` : "",
+    shipTo.emailPrimary ? `Email: ${shipTo.emailPrimary}` : "",
+    shipTo.emailSecondary ? `Email 2: ${shipTo.emailSecondary}` : "",
   ].filter(Boolean)
 
   return (
@@ -501,13 +533,20 @@ export function InvoicePDFDocument({
 
           {/* ── Buyer row ── */}
           <View style={styles.buyerRow}>
-            <Text style={styles.sectionLabel}>Bill To </Text>
-            <Text style={styles.entityName}>{client.name}</Text>
-            {clientDetailLines.map((line, i) => (
-              <Text key={i} style={styles.detailLine}>
-                {line}
-              </Text>
-            ))}
+            <View style={styles.billToBox}>
+              <Text style={styles.sectionLabel}>Bill To</Text>
+              <Text style={styles.entityName}>{billTo.name}</Text>
+              {billToLines.map((line, i) => (
+                <Text key={i} style={styles.detailLine}>{line}</Text>
+              ))}
+            </View>
+            <View style={styles.shipToBox}>
+              <Text style={styles.sectionLabel}>Ship To</Text>
+              <Text style={styles.entityName}>{shipTo.name}</Text>
+              {shipToLines.map((line, i) => (
+                <Text key={i} style={styles.detailLine}>{line}</Text>
+              ))}
+            </View>
           </View>
 
           {/* ── Line items table ── */}

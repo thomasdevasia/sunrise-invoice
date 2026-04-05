@@ -55,17 +55,18 @@ const clientsAPI = {
 export type InvoiceData = {
     id: string
     company_id: string
-    client_id: string
+    bill_to: string            // JSON: InvoiceParty
+    ship_to: string            // JSON: InvoiceParty
+    ship_same_as_bill: number  // 0 or 1
     invoice_number: string
-    invoice_date: string   // ISO 8601: "YYYY-MM-DD"
-    billed_items: string   // JSON: { items: [...], cgst_percentage, sgst_percentage }
+    invoice_date: string       // ISO 8601: "YYYY-MM-DD"
+    billed_items: string       // JSON: { items: [...], cgst_percentage, sgst_percentage }
 }
 
 export type InvoiceFilter = {
     page: number
     pageSize: number
     companyId?: string
-    clientId?: string
     date?: string
     invoiceNumber?: string
 }
