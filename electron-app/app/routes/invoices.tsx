@@ -48,7 +48,6 @@ import {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Company = { id: string; name: string; gstin: string }
-type Client = { id: string; name: string; gstin: string }
 
 type BilledItems = {
   items: {
@@ -64,7 +63,9 @@ type BilledItems = {
 type InvoiceRow = {
   id: string
   company_id: string
-  client_id: string
+  bill_to: string
+  ship_to: string
+  ship_same_as_bill: number
   invoice_number: string
   invoice_date: string
   billed_items: string
@@ -108,15 +109,9 @@ async function fetchCompanies(): Promise<Company[]> {
   return rows.map((r) => ({ id: r.id, name: r.name, gstin: r.gstin }))
 }
 
-async function fetchClients(): Promise<Client[]> {
-  const rows = await window.electronAPI.clients.getAll()
-  return rows.map((r) => ({ id: r.id, name: r.name, gstin: r.gstin }))
-}
-
 async function fetchInvoices(params: {
   page: number
   companyId?: string
-  clientId?: string
   date?: string
   invoiceNumber?: string
 }) {
@@ -124,7 +119,6 @@ async function fetchInvoices(params: {
     page: params.page,
     pageSize: PAGE_SIZE,
     companyId: params.companyId || undefined,
-    clientId: params.clientId || undefined,
     date: params.date || undefined,
     invoiceNumber: params.invoiceNumber || undefined,
   })
@@ -184,7 +178,6 @@ export default function Invoices() {
   const [draftCompanyId, setDraftCompanyId] = React.useState<string | null>(
     null
   )
-  const [draftClientId, setDraftClientId] = React.useState<string | null>(null)
   const [draftDate, setDraftDate] = React.useState<string>("")
   const [draftInvoiceNumber, setDraftInvoiceNumber] = React.useState<string>("")
 
@@ -192,23 +185,15 @@ export default function Invoices() {
   const [committedCompanyId, setCommittedCompanyId] = React.useState<
     string | null
   >(null)
-  const [committedClientId, setCommittedClientId] = React.useState<
-    string | null
-  >(null)
   const [committedDate, setCommittedDate] = React.useState<string>("")
   const [committedInvoiceNumber, setCommittedInvoiceNumber] =
     React.useState<string>("")
   const [page, setPage] = React.useState(1)
 
-  // ── Load companies + clients for comboboxes ──
+  // ── Load companies for combobox ──
   const { data: companies = [] } = useQuery({
     queryKey: ["companies"],
     queryFn: fetchCompanies,
-  })
-
-  const { data: clients = [] } = useQuery({
-    queryKey: ["clients"],
-    queryFn: fetchClients,
   })
 
   // ── Main invoice query ──
@@ -217,7 +202,6 @@ export default function Invoices() {
       "invoices",
       page,
       committedCompanyId,
-      committedClientId,
       committedDate,
       committedInvoiceNumber,
     ],
@@ -225,7 +209,6 @@ export default function Invoices() {
       fetchInvoices({
         page,
         companyId: committedCompanyId ?? undefined,
-        clientId: committedClientId ?? undefined,
         date: committedDate || undefined,
         invoiceNumber: committedInvoiceNumber || undefined,
       }),
@@ -241,14 +224,9 @@ export default function Invoices() {
     () => Object.fromEntries(companies.map((c) => [c.id, c])),
     [companies]
   )
-  const clientMap = React.useMemo(
-    () => Object.fromEntries(clients.map((c) => [c.id, c])),
-    [clients]
-  )
 
   function handleSearch() {
     setCommittedCompanyId(draftCompanyId)
-    setCommittedClientId(draftClientId)
     setCommittedDate(draftDate)
     setCommittedInvoiceNumber(draftInvoiceNumber)
     setPage(1)
@@ -256,11 +234,9 @@ export default function Invoices() {
 
   function handleClear() {
     setDraftCompanyId(null)
-    setDraftClientId(null)
     setDraftDate("")
     setDraftInvoiceNumber("")
     setCommittedCompanyId(null)
-    setCommittedClientId(null)
     setCommittedDate("")
     setCommittedInvoiceNumber("")
     setPage(1)
@@ -268,7 +244,6 @@ export default function Invoices() {
 
   const hasActiveFilters = !!(
     committedCompanyId ||
-    committedClientId ||
     committedDate ||
     committedInvoiceNumber
   )
@@ -345,42 +320,6 @@ export default function Invoices() {
           </Combobox>
         </div>
 
-        {/* Client combobox */}
-        <div className="flex min-w-45 flex-1 flex-col gap-1">
-          <label className="text-xs font-medium text-muted-foreground">
-            Client
-          </label>
-          <Combobox
-            value={draftClientId}
-            onValueChange={(val) => setDraftClientId(val as string | null)}
-            items={clients.map((c) => c.id)}
-            itemToStringLabel={(id) =>
-              clients.find((c) => c.id === id)?.name ?? ""
-            }
-          >
-            <ComboboxInput
-              className="w-full"
-              placeholder="All clients…"
-              showClear={!!draftClientId}
-            />
-            <ComboboxContent>
-              <ComboboxList>
-                <ComboboxEmpty>No clients found.</ComboboxEmpty>
-                {clients.map((client) => (
-                  <ComboboxItem key={client.id} value={client.id}>
-                    <span className="font-medium">{client.name}</span>
-                    {client.gstin && (
-                      <span className="ml-1 text-muted-foreground">
-                        ({client.gstin})
-                      </span>
-                    )}
-                  </ComboboxItem>
-                ))}
-              </ComboboxList>
-            </ComboboxContent>
-          </Combobox>
-        </div>
-
         {/* Date filter */}
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-muted-foreground">
@@ -423,7 +362,7 @@ export default function Invoices() {
                 <TableHead>Invoice #</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead>Company</TableHead>
-                <TableHead>Client</TableHead>
+                <TableHead>Bill To</TableHead>
                 <TableHead className="text-right">Total (₹)</TableHead>
               </TableRow>
             </TableHeader>
@@ -473,7 +412,7 @@ export default function Invoices() {
                   <TableHead>Invoice #</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Company</TableHead>
-                  <TableHead>Client</TableHead>
+                  <TableHead>Bill To</TableHead>
                   <TableHead className="text-right">Total (₹)</TableHead>
                 </TableRow>
               </TableHeader>
@@ -483,7 +422,7 @@ export default function Invoices() {
                 ) : (
                   invoices.map((inv: InvoiceRow) => {
                     const company = companyMap[inv.company_id]
-                    const client = clientMap[inv.client_id]
+                    const billToName = (() => { try { return (JSON.parse(inv.bill_to) as { name: string }).name } catch { return "—" } })()
                     const total = grandTotal(inv.billed_items)
                     return (
                       <TableRow
@@ -505,11 +444,7 @@ export default function Invoices() {
                           )}
                         </TableCell>
                         <TableCell className="text-sm">
-                          {client?.name ?? (
-                            <span className="text-muted-foreground italic">
-                              Unknown
-                            </span>
-                          )}
+                          {billToName}
                         </TableCell>
                         <TableCell className="text-right font-mono text-sm">
                           {formatCurrency(total)}

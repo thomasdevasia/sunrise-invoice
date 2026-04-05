@@ -48,10 +48,12 @@ export type BilledItems = {
 export type InvoiceRow = {
     id: string
     company_id: string
-    client_id: string
+    bill_to: string             // JSON-serialised InvoiceParty
+    ship_to: string             // JSON-serialised InvoiceParty
+    ship_same_as_bill: number   // 0 or 1 (SQLite boolean)
     invoice_number: string
-    invoice_date: string   // ISO 8601: "YYYY-MM-DD"
-    billed_items: string   // JSON-serialised BilledItems
+    invoice_date: string        // ISO 8601: "YYYY-MM-DD"
+    billed_items: string        // JSON-serialised BilledItems
     created_at?: string
     updated_at?: string
 }
@@ -99,14 +101,16 @@ function migrate(db: Database.Database) {
       state           TEXT NOT NULL
     );
     CREATE TABLE IF NOT EXISTS invoices (
-      id              TEXT PRIMARY KEY,
-      company_id      TEXT NOT NULL REFERENCES companies(id),
-      client_id       TEXT NOT NULL REFERENCES clients(id),
-      invoice_number  TEXT NOT NULL UNIQUE,
-      invoice_date    TEXT NOT NULL,
-      billed_items    TEXT NOT NULL,
-      created_at      TEXT DEFAULT CURRENT_TIMESTAMP,
-      updated_at      TEXT DEFAULT CURRENT_TIMESTAMP
+      id                  TEXT PRIMARY KEY,
+      company_id          TEXT NOT NULL REFERENCES companies(id),
+      bill_to             TEXT NOT NULL,
+      ship_to             TEXT NOT NULL,
+      ship_same_as_bill   INTEGER NOT NULL DEFAULT 1,
+      invoice_number      TEXT NOT NULL UNIQUE,
+      invoice_date        TEXT NOT NULL,
+      billed_items        TEXT NOT NULL,
+      created_at          TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at          TEXT DEFAULT CURRENT_TIMESTAMP
     );
   `)
 }
@@ -235,7 +239,6 @@ export type InvoiceFilter = {
     page: number      // 1-indexed
     pageSize: number  // typically 10
     companyId?: string
-    clientId?: string
     date?: string     // "YYYY-MM-DD" exact match
     invoiceNumber?: string  // partial match
 }
@@ -246,17 +249,13 @@ export type PaginatedInvoices = {
 }
 
 export function getInvoicesPaginated(params: InvoiceFilter): PaginatedInvoices {
-    const { page, pageSize, companyId, clientId, date, invoiceNumber } = params
+    const { page, pageSize, companyId, date, invoiceNumber } = params
     const conditions: string[] = []
     const bindings: unknown[] = []
 
     if (companyId) {
         conditions.push("company_id = ?")
         bindings.push(companyId)
-    }
-    if (clientId) {
-        conditions.push("client_id = ?")
-        bindings.push(clientId)
     }
     if (date) {
         conditions.push("invoice_date = ?")
@@ -291,9 +290,9 @@ export function createInvoice(data: InvoiceRow): InvoiceRow {
     getDb()
         .prepare(
             `INSERT INTO invoices
-         (id, company_id, client_id, invoice_number, invoice_date, billed_items, created_at, updated_at)
+         (id, company_id, bill_to, ship_to, ship_same_as_bill, invoice_number, invoice_date, billed_items, created_at, updated_at)
        VALUES
-         (@id, @company_id, @client_id, @invoice_number, @invoice_date, @billed_items, @created_at, @updated_at)`
+         (@id, @company_id, @bill_to, @ship_to, @ship_same_as_bill, @invoice_number, @invoice_date, @billed_items, @created_at, @updated_at)`
         )
         .run(insertData)
     return getDb()
@@ -307,12 +306,14 @@ export function updateInvoice(data: InvoiceRow): InvoiceRow {
     getDb()
         .prepare(
             `UPDATE invoices SET
-         company_id     = @company_id,
-         client_id      = @client_id,
-         invoice_number = @invoice_number,
-         invoice_date   = @invoice_date,
-         billed_items   = @billed_items,
-         updated_at     = @updated_at
+         company_id        = @company_id,
+         bill_to           = @bill_to,
+         ship_to           = @ship_to,
+         ship_same_as_bill = @ship_same_as_bill,
+         invoice_number    = @invoice_number,
+         invoice_date      = @invoice_date,
+         billed_items      = @billed_items,
+         updated_at        = @updated_at
         WHERE id = @id`
         )
         .run(updateData)
