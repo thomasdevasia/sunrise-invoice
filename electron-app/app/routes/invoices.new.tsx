@@ -249,7 +249,9 @@ export default function NewInvoice() {
 
   const cgstAmt = subtotal * ((parseFloat(cgstPct) || 0) / 100)
   const sgstAmt = subtotal * ((parseFloat(sgstPct) || 0) / 100)
-  const grandTotal = subtotal + cgstAmt + sgstAmt
+  const exactTotal = subtotal + cgstAmt + sgstAmt
+  const grandTotal = Math.ceil(exactTotal)
+  const roundedOff = grandTotal - exactTotal
 
   const selectedCompany: Company | undefined = React.useMemo(
     () => companies.find((c) => c.id === selectedCompanyId),
@@ -635,31 +637,43 @@ export default function NewInvoice() {
           </div>
 
           {/* SGST */}
-          <div>
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-muted-foreground">SGST @</span>
-              <Input
-                type="number"
-                min="0"
-                value={sgstPct}
-                onChange={(e) =>
-                  setSgstPct(
-                    Math.max(0, parseFloat(e.target.value) || 0).toString()
-                  )
-                }
-                placeholder="0"
-                className="h-7 w-16 text-center"
-              />
-              <span className="text-muted-foreground">%</span>
-              <span className="w-32 text-right font-mono text-sm">
-                {sgstAmt.toLocaleString("en-IN", {
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-muted-foreground">SGST @</span>
+            <Input
+              type="number"
+              min="0"
+              value={sgstPct}
+              onChange={(e) =>
+                setSgstPct(
+                  Math.max(0, parseFloat(e.target.value) || 0).toString()
+                )
+              }
+              placeholder="0"
+              className="h-7 w-16 text-center"
+            />
+            <span className="text-muted-foreground">%</span>
+            <span className="w-32 text-right font-mono text-sm">
+              {sgstAmt.toLocaleString("en-IN", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </span>
+          </div>
+
+          {/* Rounded off */}
+          {Math.abs(roundedOff) >= 0.005 && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span className="w-32 text-right">Rounded Off</span>
+              <span className="w-32 text-right font-mono">
+                {roundedOff.toLocaleString("en-IN", {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })}
               </span>
             </div>
-            <Separator className="my-1" />
-          </div>
+          )}
+
+          <Separator className="w-64" />
 
           {/* Grand total */}
           <div className="flex items-center gap-2 text-sm font-semibold">

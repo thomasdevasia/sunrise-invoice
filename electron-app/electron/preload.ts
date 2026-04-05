@@ -67,6 +67,7 @@ export type InvoiceFilter = {
     companyId?: string
     clientId?: string
     date?: string
+    invoiceNumber?: string
 }
 
 export type PaginatedInvoicesResult = {

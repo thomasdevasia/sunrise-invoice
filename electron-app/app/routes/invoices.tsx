@@ -78,7 +78,7 @@ function grandTotal(billedItemsJson: string): number {
     const subtotal = parsed.items.reduce((s, i) => s + i.amount, 0)
     const cgst = subtotal * ((parsed.cgst_percentage ?? 0) / 100)
     const sgst = subtotal * ((parsed.sgst_percentage ?? 0) / 100)
-    return subtotal + cgst + sgst
+    return Math.ceil(subtotal + cgst + sgst)
   } catch {
     return 0
   }
@@ -118,6 +118,7 @@ async function fetchInvoices(params: {
   companyId?: string
   clientId?: string
   date?: string
+  invoiceNumber?: string
 }) {
   return window.electronAPI.invoices.getPaginated({
     page: params.page,
@@ -125,6 +126,7 @@ async function fetchInvoices(params: {
     companyId: params.companyId || undefined,
     clientId: params.clientId || undefined,
     date: params.date || undefined,
+    invoiceNumber: params.invoiceNumber || undefined,
   })
 }
 
@@ -184,6 +186,7 @@ export default function Invoices() {
   )
   const [draftClientId, setDraftClientId] = React.useState<string | null>(null)
   const [draftDate, setDraftDate] = React.useState<string>("")
+  const [draftInvoiceNumber, setDraftInvoiceNumber] = React.useState<string>("")
 
   // ── Committed filter state (what the last Search used) ──
   const [committedCompanyId, setCommittedCompanyId] = React.useState<
@@ -193,6 +196,8 @@ export default function Invoices() {
     string | null
   >(null)
   const [committedDate, setCommittedDate] = React.useState<string>("")
+  const [committedInvoiceNumber, setCommittedInvoiceNumber] =
+    React.useState<string>("")
   const [page, setPage] = React.useState(1)
 
   // ── Load companies + clients for comboboxes ──
@@ -214,6 +219,7 @@ export default function Invoices() {
       committedCompanyId,
       committedClientId,
       committedDate,
+      committedInvoiceNumber,
     ],
     queryFn: () =>
       fetchInvoices({
@@ -221,6 +227,7 @@ export default function Invoices() {
         companyId: committedCompanyId ?? undefined,
         clientId: committedClientId ?? undefined,
         date: committedDate || undefined,
+        invoiceNumber: committedInvoiceNumber || undefined,
       }),
     placeholderData: (prev) => prev,
   })
@@ -243,6 +250,7 @@ export default function Invoices() {
     setCommittedCompanyId(draftCompanyId)
     setCommittedClientId(draftClientId)
     setCommittedDate(draftDate)
+    setCommittedInvoiceNumber(draftInvoiceNumber)
     setPage(1)
   }
 
@@ -250,16 +258,19 @@ export default function Invoices() {
     setDraftCompanyId(null)
     setDraftClientId(null)
     setDraftDate("")
+    setDraftInvoiceNumber("")
     setCommittedCompanyId(null)
     setCommittedClientId(null)
     setCommittedDate("")
+    setCommittedInvoiceNumber("")
     setPage(1)
   }
 
   const hasActiveFilters = !!(
     committedCompanyId ||
     committedClientId ||
-    committedDate
+    committedDate ||
+    committedInvoiceNumber
   )
   const loading = isLoading || isFetching
 
@@ -283,6 +294,21 @@ export default function Invoices() {
 
       {/* ── Filter Bar ── */}
       <div className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-muted/30 p-3">
+        {/* Invoice number filter */}
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-muted-foreground">
+            Invoice #
+          </label>
+          <Input
+            type="text"
+            value={draftInvoiceNumber}
+            onChange={(e) => setDraftInvoiceNumber(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            placeholder="001/SAS/2026-27"
+            className="w-36"
+          />
+        </div>
+
         {/* Company combobox */}
         <div className="flex min-w-45 flex-1 flex-col gap-1">
           <label className="text-xs font-medium text-muted-foreground">
@@ -460,7 +486,11 @@ export default function Invoices() {
                     const client = clientMap[inv.client_id]
                     const total = grandTotal(inv.billed_items)
                     return (
-                      <TableRow key={inv.id} className="group cursor-pointer" onClick={() => navigate(`/invoices/${inv.id}`)}>
+                      <TableRow
+                        key={inv.id}
+                        className="group cursor-pointer"
+                        onClick={() => navigate(`/invoices/${inv.id}`)}
+                      >
                         <TableCell className="font-mono text-sm font-medium">
                           {inv.invoice_number}
                         </TableCell>

@@ -42,200 +42,236 @@ export type InvoicePDFProps = {
   lineItems: InvoiceLineItem[]
   cgstPct: string
   sgstPct: string
+  vehicleNumber?: string
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
+const B = "#000000"
+
 const styles = StyleSheet.create({
   page: {
     fontFamily: "Helvetica",
-    fontSize: 9,
+    fontSize: 8,
     color: "#111111",
-    paddingTop: 40,
-    paddingBottom: 40,
-    paddingLeft: 44,
-    paddingRight: 44,
-    lineHeight: 1.4,
+    paddingTop: 28,
+    paddingBottom: 36,
+    paddingLeft: 32,
+    paddingRight: 32,
   },
 
-  // ── Company header
-  header: {
-    marginBottom: 20,
+  // ── Outer wrapper (full border)
+  outer: {
+    borderWidth: 0.5,
+    borderColor: B,
+    flex: 1,
   },
-  companyName: {
-    fontSize: 18,
+
+  // ── Title row
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingTop: 4,
+    paddingBottom: 6,
+    paddingLeft: 10,
+    paddingRight: 10,
+  },
+  titleCenter: {
+    flex: 1,
+    textAlign: "center",
     fontFamily: "Helvetica-Bold",
-    marginBottom: 5,
-    color: "#111111",
+    fontSize: 12,
+    letterSpacing: 1.5,
   },
-  companyMeta: {
-    fontSize: 8,
+  titleRight: {
+    fontSize: 7,
+    fontFamily: "Helvetica-Oblique",
+    textAlign: "right",
+  },
+
+  // ── Seller / Invoice info row
+  infoRow: {
+    flexDirection: "row",
+    borderBottomWidth: 0.5,
+    borderBottomColor: B,
+  },
+  sellerBox: {
+    flex: 3,
+    borderRightWidth: 0.5,
+    borderRightColor: B,
+    padding: 8,
+  },
+  invoiceBox: {
+    flex: 2,
+    padding: 8,
+  },
+
+  // ── Buyer row
+  buyerRow: {
+    borderBottomWidth: 0.5,
+    borderBottomColor: B,
+    padding: 8,
+  },
+
+  // Section heading
+  sectionLabel: {
+    fontSize: 7,
+    fontFamily: "Helvetica-Bold",
     color: "#555555",
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+    marginBottom: 4,
+  },
+  entityName: {
+    fontFamily: "Helvetica-Bold",
+    fontSize: 9,
+    marginBottom: 2,
+  },
+  detailLine: {
+    fontSize: 7,
+    color: "#333333",
     marginBottom: 1,
   },
 
-  // ── TAX INVOICE title bar
-  titleBar: {
-    backgroundColor: "#111111",
-    color: "#ffffff",
-    textAlign: "center",
-    paddingTop: 7,
-    paddingBottom: 7,
-    fontFamily: "Helvetica-Bold",
-    fontSize: 11,
-    letterSpacing: 2.5,
-    marginBottom: 16,
-  },
-
-  // ── Two-column meta row (invoice info | bill to)
-  metaRow: {
-    flexDirection: "row",
-    marginBottom: 16,
-    gap: 12,
-  },
-  metaBox: {
-    flex: 1,
-    borderWidth: 0.5,
-    borderColor: "#dddddd",
-    borderRadius: 3,
-    paddingTop: 7,
-    paddingBottom: 7,
-    paddingLeft: 10,
-    paddingRight: 10,
-  },
-  metaLabel: {
-    fontSize: 7,
-    color: "#999999",
-    fontFamily: "Helvetica-Bold",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginBottom: 4,
-  },
-  metaValue: {
-    fontSize: 10,
-    color: "#111111",
-    fontFamily: "Helvetica-Bold",
-  },
-  metaSubValue: {
-    fontSize: 8,
-    color: "#555555",
-    marginTop: 2,
-  },
-
-  // ── Line items table
-  table: {
-    borderWidth: 0.5,
-    borderColor: "#dddddd",
-    borderRadius: 3,
-    marginBottom: 16,
-  },
-  tableHeader: {
-    flexDirection: "row",
-    backgroundColor: "#f5f5f5",
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#dddddd",
-    paddingTop: 6,
-    paddingBottom: 6,
-    paddingLeft: 10,
-    paddingRight: 10,
-  },
-  tableRow: {
-    flexDirection: "row",
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#eeeeee",
-    paddingTop: 6,
-    paddingBottom: 6,
-    paddingLeft: 10,
-    paddingRight: 10,
-  },
-  tableRowLast: {
-    flexDirection: "row",
-    paddingTop: 6,
-    paddingBottom: 6,
-    paddingLeft: 10,
-    paddingRight: 10,
-  },
-  colNum: { width: 22 },
-  colDesc: { flex: 1, paddingRight: 8 },
-  colQty: { width: 48, textAlign: "right" },
-  colRate: { width: 62, textAlign: "right" },
-  colAmount: { width: 72, textAlign: "right" },
-  thText: {
-    fontSize: 7,
-    color: "#888888",
-    fontFamily: "Helvetica-Bold",
-    textTransform: "uppercase",
-    letterSpacing: 0.3,
-  },
-  tdText: {
-    fontSize: 9,
-    color: "#111111",
-  },
-  tdMuted: {
-    fontSize: 9,
-    color: "#aaaaaa",
-  },
-
-  // ── Totals
-  totalsBlock: {
-    alignItems: "flex-end",
-    marginBottom: 24,
-  },
-  totalRow: {
+  // Invoice detail key/value pairs
+  kvRow: {
     flexDirection: "row",
     marginBottom: 3,
   },
-  totalLabel: {
-    fontSize: 8,
+  kvKey: {
+    fontSize: 7,
     color: "#555555",
-    width: 110,
-    textAlign: "right",
-    paddingRight: 12,
+    width: 72,
   },
-  totalValue: {
-    fontSize: 9,
-    color: "#111111",
-    width: 80,
-    textAlign: "right",
-    fontFamily: "Helvetica",
+  kvVal: {
+    fontSize: 8,
+    fontFamily: "Helvetica-Bold",
+    flex: 1,
   },
-  dividerRow: {
-    width: 202,
+
+  // ── Table header
+  tableHeader: {
+    flexDirection: "row",
+    borderBottomWidth: 0.5,
+    borderBottomColor: B,
+    backgroundColor: "#f5f5f5",
+    paddingTop: 4,
+    paddingBottom: 4,
+  },
+  thText: {
+    fontSize: 7,
+    fontFamily: "Helvetica-Bold",
+    textAlign: "center",
+  },
+
+  // ── Table row
+  tableRow: {
+    flexDirection: "row",
     borderBottomWidth: 0.5,
     borderBottomColor: "#cccccc",
-    marginTop: 4,
-    marginBottom: 6,
+    paddingTop: 4,
+    paddingBottom: 4,
+    minHeight: 20,
   },
-  grandTotalLabel: {
-    fontSize: 10,
-    fontFamily: "Helvetica-Bold",
-    color: "#111111",
-    width: 110,
-    textAlign: "right",
-    paddingRight: 12,
+  tableRowLast: {
+    flexDirection: "row",
+    paddingTop: 4,
+    paddingBottom: 4,
+    minHeight: 20,
   },
-  grandTotalValue: {
-    fontSize: 10,
-    fontFamily: "Helvetica-Bold",
-    color: "#111111",
-    width: 80,
+  tdText: { fontSize: 8, color: "#111111" },
+  tdMuted: { fontSize: 8, color: "#888888" },
+
+  // Column widths (must sum to page content width)
+  colSI: {
+    width: 24,
+    textAlign: "center",
+    borderRightWidth: 0.5,
+    borderRightColor: B,
+    paddingLeft: 2,
+    paddingRight: 2,
+  },
+  colDesc: {
+    flex: 1,
+    paddingLeft: 6,
+    paddingRight: 4,
+    borderRightWidth: 0.5,
+    borderRightColor: B,
+  },
+  colQty: {
+    width: 56,
+    textAlign: "center",
+    borderRightWidth: 0.5,
+    borderRightColor: B,
+    paddingLeft: 2,
+    paddingRight: 2,
+  },
+  colRate: {
+    width: 60,
     textAlign: "right",
+    borderRightWidth: 0.5,
+    borderRightColor: B,
+    paddingLeft: 2,
+    paddingRight: 4,
+  },
+  colAmount: {
+    width: 68,
+    textAlign: "right",
+    paddingLeft: 2,
+    paddingRight: 6,
+  },
+
+  // ── Total row
+  totalRow: {
+    flexDirection: "row",
+    borderTopWidth: 0.5,
+    borderTopColor: B,
+    paddingTop: 5,
+    paddingBottom: 5,
+  },
+  totalLabel: {
+    flex: 1,
+    textAlign: "right",
+    paddingRight: 8,
+    fontSize: 9,
+    fontFamily: "Helvetica-Bold",
+  },
+  totalValue: {
+    width: 68,
+    textAlign: "right",
+    paddingRight: 6,
+    fontSize: 9,
+    fontFamily: "Helvetica-Bold",
+  },
+
+  // ── Amount in words
+  wordsRow: {
+    borderTopWidth: 0.5,
+    borderTopColor: B,
+    padding: 7,
+  },
+  wordsLabel: {
+    fontSize: 7,
+    color: "#555555",
+    marginBottom: 2,
+  },
+  wordsValue: {
+    fontSize: 8,
+    fontFamily: "Helvetica-Bold",
   },
 
   // ── Footer
   footer: {
     position: "absolute",
-    bottom: 28,
-    left: 44,
-    right: 44,
-    borderTopWidth: 0.5,
-    borderTopColor: "#eeeeee",
-    paddingTop: 6,
+    bottom: 12,
+    left: 32,
+    right: 32,
+    alignItems: "center",
   },
   footerText: {
     fontSize: 7,
-    color: "#aaaaaa",
-    textAlign: "center",
+    color: "#888888",
+    fontFamily: "Helvetica-Oblique",
   },
 })
 
@@ -252,8 +288,59 @@ function formatDate(date: Date) {
   return date.toLocaleDateString("en-IN", {
     day: "2-digit",
     month: "short",
-    year: "numeric",
+    year: "2-digit",
   })
+}
+
+// ── Number to Indian words ────────────────────────────────────────────────────
+
+const _ones = [
+  "", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine",
+  "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen",
+  "Seventeen", "Eighteen", "Nineteen",
+]
+const _tens = [
+  "", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety",
+]
+
+function _twoDigit(n: number): string {
+  if (n === 0) return ""
+  if (n < 20) return _ones[n]
+  return _tens[Math.floor(n / 10)] + (n % 10 ? " " + _ones[n % 10] : "")
+}
+
+function _threeDigit(n: number): string {
+  if (n === 0) return ""
+  if (n < 100) return _twoDigit(n)
+  return _ones[Math.floor(n / 100)] + " Hundred" + (n % 100 ? " " + _twoDigit(n % 100) : "")
+}
+
+function numberToWords(amount: number): string {
+  const rupees = Math.floor(Math.abs(amount))
+  const paiseRaw = Math.round((Math.abs(amount) - rupees) * 100)
+  const paise = paiseRaw % 100
+
+  const parts: string[] = []
+
+  const crore = Math.floor(rupees / 10_000_000)
+  const afterCrore = rupees % 10_000_000
+  const lakh = Math.floor(afterCrore / 100_000)
+  const afterLakh = afterCrore % 100_000
+  const thousand = Math.floor(afterLakh / 1_000)
+  const remainder = afterLakh % 1_000
+
+  if (crore) parts.push(_threeDigit(crore) + " Crore")
+  if (lakh) parts.push(_twoDigit(lakh) + " Lakh")
+  if (thousand) parts.push(_twoDigit(thousand) + " Thousand")
+  if (remainder) parts.push(_threeDigit(remainder))
+
+  const rupeeWords = parts.length ? parts.join(" ") : "Zero"
+  const base = `INR ${rupeeWords}`
+
+  if (paise > 0) {
+    return `${base} and ${_twoDigit(paise)} Paise Only`
+  }
+  return `${base} Only`
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -266,6 +353,7 @@ export function InvoicePDFDocument({
   lineItems,
   cgstPct,
   sgstPct,
+  vehicleNumber,
 }: InvoicePDFProps) {
   const subtotal = lineItems.reduce(
     (sum, r) => sum + (parseFloat(r.quantity) || 0) * (parseFloat(r.rate) || 0),
@@ -275,90 +363,102 @@ export function InvoicePDFDocument({
   const sgstRate = parseFloat(sgstPct) || 0
   const cgstAmt = subtotal * (cgstRate / 100)
   const sgstAmt = subtotal * (sgstRate / 100)
-  const grandTotal = subtotal + cgstAmt + sgstAmt
+  const exactTotal = subtotal + cgstAmt + sgstAmt
+  const grandTotal = Math.ceil(exactTotal)
+  const roundedOff = grandTotal - exactTotal
 
-  // Company detail lines (only non-empty)
-  const companyLines = [
-    [company.address, company.state].filter(Boolean).join(", "),
-    company.gstin ? `GSTIN: ${company.gstin}` : "",
+  const companyDetailLines = [
+    company.address,
+    company.state ? `State: ${company.state}` : "",
     company.pan ? `PAN: ${company.pan}` : "",
-    company.phonePrimary ? `Phone: ${company.phonePrimary}` : "",
+    company.gstin ? `GSTIN: ${company.gstin}` : "",
+    company.phonePrimary ? `Ph: ${company.phonePrimary}` : "",
     company.emailPrimary ? `Email: ${company.emailPrimary}` : "",
-    company.website ? `Web: ${company.website}` : "",
   ].filter(Boolean)
 
-  // Client detail lines (only non-empty)
-  const clientLines = [
-    [client.address, client.state].filter(Boolean).join(", "),
+  const clientDetailLines = [
+    client.address,
+    client.state ? `State: ${client.state}` : "",
     client.gstin ? `GSTIN: ${client.gstin}` : "",
-    client.phonePrimary ? `Phone: ${client.phonePrimary}` : "",
-    client.emailPrimary ? `Email: ${client.emailPrimary}` : "",
+    client.phonePrimary ? `Ph: ${client.phonePrimary}` : "",
   ].filter(Boolean)
 
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        {/* ── Company Header ── */}
-        <View style={styles.header}>
-          <Text style={styles.companyName}>{company.name}</Text>
-          {companyLines.map((line, i) => (
-            <Text key={i} style={styles.companyMeta}>
-              {line}
-            </Text>
-          ))}
+        {/* ── Title row (no border) ── */}
+        <View style={styles.titleRow}>
+          <Text style={{ width: 120, fontSize: 7 }} />
+          <Text style={styles.titleCenter}>TAX INVOICE</Text>
+          <Text style={[styles.titleRight, { width: 120 }]}>
+            (ORIGINAL FOR RECIPIENT)
+          </Text>
         </View>
 
-        {/* ── TAX INVOICE bar ── */}
-        <Text style={styles.titleBar}>TAX INVOICE</Text>
+        <View style={styles.outer}>
 
-        {/* ── Invoice meta + Bill To ── */}
-        <View style={styles.metaRow}>
-          {/* Invoice number & date */}
-          <View style={styles.metaBox}>
-            <Text style={styles.metaLabel}>Invoice Number</Text>
-            <Text style={styles.metaValue}>{invoiceNumber}</Text>
-            <Text style={[styles.metaSubValue, { marginTop: 8 }]}>
-              <Text style={styles.metaLabel}>Date{"  "}</Text>
-              {formatDate(invoiceDate)}
-            </Text>
+          {/* ── Seller / Invoice info ── */}
+          <View style={styles.infoRow}>
+            {/* Seller details */}
+            <View style={styles.sellerBox}>
+              <Text style={styles.sectionLabel}>Seller</Text>
+              <Text style={styles.entityName}>{company.name}</Text>
+              {companyDetailLines.map((line, i) => (
+                <Text key={i} style={styles.detailLine}>{line}</Text>
+              ))}
+            </View>
+
+            {/* Invoice meta */}
+            <View style={styles.invoiceBox}>
+              <Text style={styles.sectionLabel}>Invoice Details</Text>
+              <View style={styles.kvRow}>
+                <Text style={styles.kvKey}>Invoice No.</Text>
+                <Text style={styles.kvVal}>{invoiceNumber}</Text>
+              </View>
+              <View style={styles.kvRow}>
+                <Text style={styles.kvKey}>Date</Text>
+                <Text style={styles.kvVal}>{formatDate(invoiceDate)}</Text>
+              </View>
+              {vehicleNumber ? (
+                <View style={styles.kvRow}>
+                  <Text style={styles.kvKey}>Vehicle No.</Text>
+                  <Text style={styles.kvVal}>{vehicleNumber}</Text>
+                </View>
+              ) : null}
+            </View>
           </View>
 
-          {/* Bill To */}
-          <View style={styles.metaBox}>
-            <Text style={styles.metaLabel}>Bill To</Text>
-            <Text style={styles.metaValue}>{client.name}</Text>
-            {clientLines.map((line, i) => (
-              <Text key={i} style={styles.metaSubValue}>
-                {line}
-              </Text>
+          {/* ── Buyer row ── */}
+          <View style={styles.buyerRow}>
+            <Text style={styles.sectionLabel}>Buyer (Bill To / Consignee)</Text>
+            <Text style={styles.entityName}>{client.name}</Text>
+            {clientDetailLines.map((line, i) => (
+              <Text key={i} style={styles.detailLine}>{line}</Text>
             ))}
           </View>
-        </View>
 
-        {/* ── Line Items Table ── */}
-        <View style={styles.table}>
+          {/* ── Line items table ── */}
+
           {/* Table header */}
           <View style={styles.tableHeader}>
-            <Text style={[styles.thText, styles.colNum]}>#</Text>
-            <Text style={[styles.thText, styles.colDesc]}>Description</Text>
-            <Text style={[styles.thText, styles.colQty]}>Qty</Text>
+            <Text style={[styles.thText, styles.colSI]}>SI{"\n"}No.</Text>
+            <Text style={[styles.thText, styles.colDesc, { paddingLeft: 6 }]}>
+              Description of Goods / Services
+            </Text>
+            <Text style={[styles.thText, styles.colQty]}>Quantity</Text>
             <Text style={[styles.thText, styles.colRate]}>Rate</Text>
             <Text style={[styles.thText, styles.colAmount]}>Amount</Text>
           </View>
 
-          {/* Table rows */}
+          {/* Line item rows */}
           {lineItems.map((row, idx) => {
             const qty = parseFloat(row.quantity) || 0
             const rate = parseFloat(row.rate) || 0
             const amount = qty * rate
-            const isLast = idx === lineItems.length - 1
             return (
-              <View
-                key={idx}
-                style={isLast ? styles.tableRowLast : styles.tableRow}
-              >
-                <Text style={[styles.tdMuted, styles.colNum]}>{idx + 1}</Text>
-                <Text style={[styles.tdText, styles.colDesc]}>
+              <View key={idx} style={styles.tableRow}>
+                <Text style={[styles.tdMuted, styles.colSI]}>{idx + 1}</Text>
+                <Text style={[styles.tdText, styles.colDesc, { fontFamily: "Helvetica-Bold" }]}>
                   {row.description || "—"}
                 </Text>
                 <Text style={[styles.tdText, styles.colQty]}>
@@ -373,41 +473,65 @@ export function InvoicePDFDocument({
               </View>
             )
           })}
-        </View>
 
-        {/* ── Totals ── */}
-        <View style={styles.totalsBlock}>
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Subtotal</Text>
-            <Text style={styles.totalValue}>{fmt(subtotal)}</Text>
-          </View>
-
+          {/* CGST sub-row */}
           {cgstRate > 0 && (
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>CGST @ {cgstRate}%</Text>
-              <Text style={styles.totalValue}>{fmt(cgstAmt)}</Text>
+            <View style={styles.tableRow}>
+              <Text style={[styles.tdMuted, styles.colSI]} />
+              <Text style={[styles.tdText, styles.colDesc, { textAlign: "right", paddingRight: 8, fontFamily: "Helvetica-Oblique" }]}>
+                CGST @ {cgstRate}%
+              </Text>
+              <Text style={[styles.tdMuted, styles.colQty]} />
+              <Text style={[styles.tdMuted, styles.colRate]} />
+              <Text style={[styles.tdText, styles.colAmount]}>{fmt(cgstAmt)}</Text>
             </View>
           )}
 
+          {/* SGST sub-row */}
           {sgstRate > 0 && (
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>SGST @ {sgstRate}%</Text>
-              <Text style={styles.totalValue}>{fmt(sgstAmt)}</Text>
+            <View style={styles.tableRow}>
+              <Text style={[styles.tdMuted, styles.colSI]} />
+              <Text style={[styles.tdText, styles.colDesc, { textAlign: "right", paddingRight: 8, fontFamily: "Helvetica-Oblique" }]}>
+                SGST @ {sgstRate}%
+              </Text>
+              <Text style={[styles.tdMuted, styles.colQty]} />
+              <Text style={[styles.tdMuted, styles.colRate]} />
+              <Text style={[styles.tdText, styles.colAmount]}>{fmt(sgstAmt)}</Text>
             </View>
           )}
 
-          <View style={styles.dividerRow} />
+          {/* Rounded off sub-row */}
+          {Math.abs(roundedOff) >= 0.005 && (
+            <View style={styles.tableRowLast}>
+              <Text style={[styles.tdMuted, styles.colSI]} />
+              <Text style={[styles.tdText, styles.colDesc, { textAlign: "right", paddingRight: 8, fontFamily: "Helvetica-Oblique" }]}>
+                Rounded Off
+              </Text>
+              <Text style={[styles.tdMuted, styles.colQty]} />
+              <Text style={[styles.tdMuted, styles.colRate]} />
+              <Text style={[styles.tdText, styles.colAmount]}>{fmt(roundedOff)}</Text>
+            </View>
+          )}
 
+          {/* Grand total row */}
           <View style={styles.totalRow}>
-            <Text style={styles.grandTotalLabel}>Total</Text>
-            <Text style={styles.grandTotalValue}>{fmt(grandTotal)}</Text>
+            <Text style={[styles.tdMuted, styles.colSI]} />
+            <Text style={[styles.totalLabel]}>Total</Text>
+            <Text style={styles.totalValue}>Rs. {fmt(grandTotal)}</Text>
           </View>
+
+          {/* ── Amount in words ── */}
+          <View style={styles.wordsRow}>
+            <Text style={styles.wordsLabel}>Amount Chargeable (in words)</Text>
+            <Text style={styles.wordsValue}>{numberToWords(grandTotal)}</Text>
+          </View>
+
         </View>
 
-        {/* ── Footer ── */}
+        {/* ── Footer (absolute bottom of page) ── */}
         <View style={styles.footer} fixed>
           <Text style={styles.footerText}>
-            This is a computer-generated invoice.
+            This is a Computer Generated Invoice
           </Text>
         </View>
       </Page>

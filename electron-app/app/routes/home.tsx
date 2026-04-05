@@ -55,7 +55,7 @@ function grandTotal(billedItemsJson: string): number {
     const subtotal = parsed.items.reduce((s, i) => s + i.amount, 0)
     const cgst = subtotal * ((parsed.cgst_percentage ?? 0) / 100)
     const sgst = subtotal * ((parsed.sgst_percentage ?? 0) / 100)
-    return subtotal + cgst + sgst
+    return Math.ceil(subtotal + cgst + sgst)
   } catch {
     return 0
   }

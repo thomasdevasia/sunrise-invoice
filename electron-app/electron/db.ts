@@ -237,6 +237,7 @@ export type InvoiceFilter = {
     companyId?: string
     clientId?: string
     date?: string     // "YYYY-MM-DD" exact match
+    invoiceNumber?: string  // partial match
 }
 
 export type PaginatedInvoices = {
@@ -245,7 +246,7 @@ export type PaginatedInvoices = {
 }
 
 export function getInvoicesPaginated(params: InvoiceFilter): PaginatedInvoices {
-    const { page, pageSize, companyId, clientId, date } = params
+    const { page, pageSize, companyId, clientId, date, invoiceNumber } = params
     const conditions: string[] = []
     const bindings: unknown[] = []
 
@@ -260,6 +261,10 @@ export function getInvoicesPaginated(params: InvoiceFilter): PaginatedInvoices {
     if (date) {
         conditions.push("invoice_date = ?")
         bindings.push(date)
+    }
+    if (invoiceNumber) {
+        conditions.push("invoice_number LIKE ?")
+        bindings.push(`%${invoiceNumber}%`)
     }
 
     const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : ""
