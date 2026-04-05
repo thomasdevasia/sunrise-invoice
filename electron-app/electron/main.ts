@@ -24,7 +24,7 @@ import { fileURLToPath } from "node:url"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-const rendererBuildPath = path.join(__dirname, "../build/client/index.html")
+const rendererBuildPath = path.join(__dirname, "../renderer/index.html")
 
 function createMainWindow() {
   const mainWindow = new BrowserWindow({
@@ -36,7 +36,7 @@ function createMainWindow() {
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
-      preload: path.join(__dirname, "preload.js"),
+      preload: path.join(__dirname, "../preload/preload.cjs"),
     },
   })
 
@@ -53,7 +53,7 @@ function createMainWindow() {
     console.error(`Electron renderer exited: ${details.reason}`)
   })
 
-  const devServerUrl = process.env.VITE_DEV_SERVER_URL
+  const devServerUrl = process.env.ELECTRON_RENDERER_URL
 
   if (devServerUrl) {
     void mainWindow.loadURL(devServerUrl).catch((error: unknown) => {

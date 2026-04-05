@@ -2,10 +2,8 @@
 .env
 /node_modules/
 
-# React Router
-/.react-router/
-/build/
-/dist-electron/
+# electron-vite build output
+/out/
 
-# dist-electron-builder
+# electron-builder packaged output
 /dist/

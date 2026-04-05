@@ -1,0 +1,27 @@
+appId: com.sunrise.invoice
+productName: Sunrise Invoice
+directories:
+  output: dist
+  buildResources: build-resources
+files:
+  - out/**/*
+  - package.json
+  - "!**/*.map"
+asarUnpack:
+  - "**/*.{node,dll}"
+mac:
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+  category: public.app-category.business
+  artifactName: ${productName}-${version}-${arch}.${ext}
+dmg:
+  artifactName: ${productName}-${version}-${arch}.${ext}
+linux:
+  target:
+    - AppImage
+  category: Office
+  artifactName: ${productName}-${version}-${arch}.${ext}
+  maintainer: thomas devasia
