@@ -1,5 +1,5 @@
 appId: com.sunrise.invoice
-productName: Sunrise Invoice
+productName: SunriseInvoice
 directories:
   output: dist
   buildResources: build-resources
