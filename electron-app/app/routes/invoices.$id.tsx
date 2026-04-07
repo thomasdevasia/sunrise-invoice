@@ -5,7 +5,6 @@ import {
   ArrowLeftIcon,
   BuildingIcon,
   CalendarIcon,
-  CopyIcon,
   DownloadIcon,
   EyeIcon,
   PlusIcon,
@@ -28,6 +27,12 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu"
 import { Calendar } from "@/components/ui/calendar"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
@@ -649,7 +654,8 @@ export default function EditInvoice() {
   const [saving, setSaving] = React.useState(false)
   const [deleting, setDeleting] = React.useState(false)
   const [downloading, setDownloading] = React.useState(false)
-  const [downloadingDuplicate, setDownloadingDuplicate] = React.useState(false)
+  const [downloadingDuplicateTransporter, setDownloadingDuplicateTransporter] = React.useState(false)
+  const [downloadingDuplicateOffice, setDownloadingDuplicateOffice] = React.useState(false)
   const [pdfUrl, setPdfUrl] = React.useState<string | null>(null)
   const [pdfOpen, setPdfOpen] = React.useState(false)
 
@@ -797,32 +803,61 @@ export default function EditInvoice() {
     }
   }
 
-  async function handleDownloadDuplicate() {
+  async function handleDownloadDuplicateTransporter() {
     const props = buildPdfProps()
     if (!props) {
       toast.error("Please select a company before downloading.")
       return
     }
 
-    setDownloadingDuplicate(true)
+    setDownloadingDuplicateTransporter(true)
     try {
       const blob = await pdf(
-        <InvoicePDFDocument {...props} copyType="duplicate" />
+        <InvoicePDFDocument {...props} copyType="duplicate-transporter" />
       ).toBlob()
       const buffer = await blob.arrayBuffer()
       const result = await window.electronAPI.invoices.savePdf({
-        defaultName: `${invoiceNumber.replace(/\//g, "-")}-duplicate.pdf`,
+        defaultName: `${invoiceNumber.replace(/\//g, "-")}-duplicate-transporter.pdf`,
         buffer,
       })
       if (result.success) {
-        toast.success("Duplicate copy downloaded.")
+        toast.success("Duplicate for transporter downloaded.")
       }
     } catch (err: unknown) {
       toast.error(
         err instanceof Error ? err.message : "Failed to generate PDF."
       )
     } finally {
-      setDownloadingDuplicate(false)
+      setDownloadingDuplicateTransporter(false)
+    }
+  }
+
+  async function handleDownloadDuplicateOffice() {
+    const props = buildPdfProps()
+    if (!props) {
+      toast.error("Please select a company before downloading.")
+      return
+    }
+
+    setDownloadingDuplicateOffice(true)
+    try {
+      const blob = await pdf(
+        <InvoicePDFDocument {...props} copyType="duplicate-office" />
+      ).toBlob()
+      const buffer = await blob.arrayBuffer()
+      const result = await window.electronAPI.invoices.savePdf({
+        defaultName: `${invoiceNumber.replace(/\//g, "-")}-duplicate-office.pdf`,
+        buffer,
+      })
+      if (result.success) {
+        toast.success("Duplicate for office downloaded.")
+      }
+    } catch (err: unknown) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to generate PDF."
+      )
+    } finally {
+      setDownloadingDuplicateOffice(false)
     }
   }
 
@@ -910,24 +945,31 @@ export default function EditInvoice() {
             <EyeIcon className="mr-1.5 size-3.5" />
             View as PDF
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleDownload}
-            disabled={downloading || downloadingDuplicate || saving || deleting}
-          >
-            <DownloadIcon className="mr-1.5 size-3.5" />
-            {downloading ? "Preparing…" : "Download Original"}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleDownloadDuplicate}
-            disabled={downloading || downloadingDuplicate || saving || deleting}
-          >
-            <CopyIcon className="mr-1.5 size-3.5" />
-            {downloadingDuplicate ? "Preparing…" : "Download Duplicate"}
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={downloading || downloadingDuplicateTransporter || downloadingDuplicateOffice || saving || deleting}
+                />
+              }
+            >
+              <DownloadIcon className="mr-1.5 size-3.5" />
+              {downloading || downloadingDuplicateTransporter || downloadingDuplicateOffice ? "Preparing…" : "Download"}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={handleDownload} disabled={downloading || downloadingDuplicateTransporter || downloadingDuplicateOffice}>
+                Original
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleDownloadDuplicateTransporter} disabled={downloading || downloadingDuplicateTransporter || downloadingDuplicateOffice}>
+                Duplicate for Transporter
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleDownloadDuplicateOffice} disabled={downloading || downloadingDuplicateTransporter || downloadingDuplicateOffice}>
+                Duplicate for Office
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {/* Delete */}
           <AlertDialog>

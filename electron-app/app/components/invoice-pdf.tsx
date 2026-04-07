@@ -76,7 +76,7 @@ export type InvoicePDFProps = {
   cgstPct: string
   sgstPct: string
   igstPct: string
-  copyType?: "original" | "duplicate"
+  copyType?: "original" | "duplicate-transporter" | "duplicate-office"
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -598,9 +598,11 @@ export function InvoicePDFDocument({
           <Text style={{ width: 120, fontSize: 7 }} />
           <Text style={styles.titleCenter}>TAX INVOICE</Text>
           <Text style={[styles.titleRight, { width: 120 }]}>
-            {copyType === "duplicate"
+            {copyType === "duplicate-transporter"
               ? "(DUPLICATE COPY FOR TRANSPORTER)"
-              : "(ORIGINAL FOR RECIPIENT)"}
+              : copyType === "duplicate-office"
+                ? "(DUPLICATE COPY FOR OFFICE)"
+                : "(ORIGINAL FOR RECIPIENT)"}
           </Text>
         </View>
 
