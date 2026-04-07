@@ -5,6 +5,7 @@ import {
   ArrowLeftIcon,
   BuildingIcon,
   CalendarIcon,
+  CopyIcon,
   DownloadIcon,
   EyeIcon,
   PlusIcon,
@@ -648,6 +649,7 @@ export default function EditInvoice() {
   const [saving, setSaving] = React.useState(false)
   const [deleting, setDeleting] = React.useState(false)
   const [downloading, setDownloading] = React.useState(false)
+  const [downloadingDuplicate, setDownloadingDuplicate] = React.useState(false)
   const [pdfUrl, setPdfUrl] = React.useState<string | null>(null)
   const [pdfOpen, setPdfOpen] = React.useState(false)
 
@@ -795,6 +797,35 @@ export default function EditInvoice() {
     }
   }
 
+  async function handleDownloadDuplicate() {
+    const props = buildPdfProps()
+    if (!props) {
+      toast.error("Please select a company before downloading.")
+      return
+    }
+
+    setDownloadingDuplicate(true)
+    try {
+      const blob = await pdf(
+        <InvoicePDFDocument {...props} copyType="duplicate" />
+      ).toBlob()
+      const buffer = await blob.arrayBuffer()
+      const result = await window.electronAPI.invoices.savePdf({
+        defaultName: `${invoiceNumber.replace(/\//g, "-")}-duplicate.pdf`,
+        buffer,
+      })
+      if (result.success) {
+        toast.success("Duplicate copy downloaded.")
+      }
+    } catch (err: unknown) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to generate PDF."
+      )
+    } finally {
+      setDownloadingDuplicate(false)
+    }
+  }
+
   async function handleDelete() {
     setDeleting(true)
     try {
@@ -883,10 +914,19 @@ export default function EditInvoice() {
             variant="outline"
             size="sm"
             onClick={handleDownload}
-            disabled={downloading || saving || deleting}
+            disabled={downloading || downloadingDuplicate || saving || deleting}
           >
             <DownloadIcon className="mr-1.5 size-3.5" />
-            {downloading ? "Preparing…" : "Download Invoice"}
+            {downloading ? "Preparing…" : "Download Original"}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownloadDuplicate}
+            disabled={downloading || downloadingDuplicate || saving || deleting}
+          >
+            <CopyIcon className="mr-1.5 size-3.5" />
+            {downloadingDuplicate ? "Preparing…" : "Download Duplicate"}
           </Button>
 
           {/* Delete */}

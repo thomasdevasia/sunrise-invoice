@@ -76,6 +76,7 @@ export type InvoicePDFProps = {
   cgstPct: string
   sgstPct: string
   igstPct: string
+  copyType?: "original" | "duplicate"
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -530,6 +531,7 @@ export function InvoicePDFDocument({
   cgstPct,
   sgstPct,
   igstPct,
+  copyType = "original",
 }: InvoicePDFProps) {
   const subtotal = lineItems.reduce(
     (sum, r) => sum + (parseFloat(r.quantity) || 0) * (parseFloat(r.rate) || 0),
@@ -545,9 +547,10 @@ export function InvoicePDFDocument({
   const cgstRate = parseFloat(cgstPct) || 0
   const sgstRate = parseFloat(sgstPct) || 0
   const igstRate = parseFloat(igstPct) || 0
-  const cgstAmt = subtotal * (cgstRate / 100)
-  const sgstAmt = subtotal * (sgstRate / 100)
-  const igstAmt = subtotal * (igstRate / 100)
+  const taxableAmount = subtotal + otherChargesTotal
+  const cgstAmt = taxableAmount * (cgstRate / 100)
+  const sgstAmt = taxableAmount * (sgstRate / 100)
+  const igstAmt = taxableAmount * (igstRate / 100)
   const exactTotal = subtotal + otherChargesTotal + cgstAmt + sgstAmt + igstAmt
   const grandTotal = Math.ceil(exactTotal)
   const roundedOff = grandTotal - exactTotal
@@ -595,7 +598,9 @@ export function InvoicePDFDocument({
           <Text style={{ width: 120, fontSize: 7 }} />
           <Text style={styles.titleCenter}>TAX INVOICE</Text>
           <Text style={[styles.titleRight, { width: 120 }]}>
-            (ORIGINAL FOR RECIPIENT)
+            {copyType === "duplicate"
+              ? "(DUPLICATE COPY FOR TRANSPORTER)"
+              : "(ORIGINAL FOR RECIPIENT)"}
           </Text>
         </View>
 
@@ -698,129 +703,169 @@ export function InvoicePDFDocument({
               )
             })}
 
+            {/* Subtotal row — bordered top and bottom, skipping SI No column */}
+            <View style={styles.tableRow}>
+              <Text style={[styles.tdMuted, styles.colSI]} />
+              <Text
+                style={[
+                  styles.tdText,
+                  styles.colDesc,
+                  {
+                    textAlign: "right",
+                    paddingRight: 8,
+                    fontWeight: "bold",
+                    borderTopWidth: 0.5,
+                    borderTopColor: B,
+                    borderBottomWidth: 0.5,
+                    borderBottomColor: B,
+                  },
+                ]}
+              >
+                Subtotal
+              </Text>
+              <Text style={[styles.tdMuted, styles.colHsn, { borderTopWidth: 0.5, borderTopColor: B, borderBottomWidth: 0.5, borderBottomColor: B }]} />
+              <Text style={[styles.tdMuted, styles.colQty, { borderTopWidth: 0.5, borderTopColor: B, borderBottomWidth: 0.5, borderBottomColor: B }]} />
+              <Text style={[styles.tdMuted, styles.colRate, { borderTopWidth: 0.5, borderTopColor: B, borderBottomWidth: 0.5, borderBottomColor: B }]} />
+              <Text
+                style={[
+                  styles.tdText,
+                  styles.colAmount,
+                  {
+                    fontWeight: "bold",
+                    borderTopWidth: 0.5,
+                    borderTopColor: B,
+                    borderBottomWidth: 0.5,
+                    borderBottomColor: B,
+                  },
+                ]}
+              >
+                {fmt(subtotal)}
+              </Text>
+            </View>
+
             {visibleOtherCharges.map((charge, idx) => (
-              <View key={`charge-${idx}`} style={styles.tableRow}>
-                <Text style={[styles.tdMuted, styles.colSI]} />
-                <Text
-                  style={[
-                    styles.tdText,
-                    styles.colDesc,
-                    { textAlign: "right", paddingRight: 8 },
-                  ]}
-                >
-                  {charge.description || "Other Charge"}
-                </Text>
-                <Text style={[styles.tdMuted, styles.colHsn]} />
-                <Text style={[styles.tdMuted, styles.colQty]} />
-                <Text style={[styles.tdMuted, styles.colRate]} />
-                <Text style={[styles.tdText, styles.colAmount]}>
-                  {fmt(charge.amount)}
-                </Text>
-              </View>
-            ))}
+                <View key={`charge-${idx}`} style={styles.tableRow}>
+                  <Text style={[styles.tdMuted, styles.colSI]} />
+                  <Text
+                    style={[
+                      styles.tdText,
+                      styles.colDesc,
+                      { textAlign: "right", paddingRight: 8 },
+                    ]}
+                  >
+                    {charge.description || "Other Charge"}
+                  </Text>
+                  <Text style={[styles.tdMuted, styles.colHsn]} />
+                  <Text style={[styles.tdMuted, styles.colQty]} />
+                  <Text style={[styles.tdMuted, styles.colRate]} />
+                  <Text style={[styles.tdText, styles.colAmount]}>
+                    {fmt(charge.amount)}
+                  </Text>
+                </View>
+              ))}
 
-            {/* CGST sub-row */}
-            {cgstRate > 0 && (
-              <View style={styles.tableRow}>
-                <Text style={[styles.tdMuted, styles.colSI]} />
-                <Text
-                  style={[
-                    styles.tdText,
-                    styles.colDesc,
-                    {
-                      textAlign: "right",
-                      paddingRight: 8,
-                      fontStyle: "italic",
-                    },
-                  ]}
-                >
-                  CGST @ {cgstRate}%
-                </Text>
-                <Text style={[styles.tdMuted, styles.colHsn]} />
-                <Text style={[styles.tdMuted, styles.colQty]} />
-                <Text style={[styles.tdMuted, styles.colRate]} />
-                <Text style={[styles.tdText, styles.colAmount]}>
-                  {fmt(cgstAmt)}
-                </Text>
-              </View>
-            )}
+              {/* CGST sub-row */}
+              {cgstRate > 0 && (
+                <View style={styles.tableRow}>
+                  <Text style={[styles.tdMuted, styles.colSI]} />
+                  <Text
+                    style={[
+                      styles.tdText,
+                      styles.colDesc,
+                      {
+                        textAlign: "right",
+                        paddingRight: 8,
+                        fontStyle: "italic",
+                      },
+                    ]}
+                  >
+                    CGST @ {cgstRate}%
+                  </Text>
+                  <Text style={[styles.tdMuted, styles.colHsn]} />
+                  <Text style={[styles.tdMuted, styles.colQty]} />
+                  <Text style={[styles.tdMuted, styles.colRate]} />
+                  <Text style={[styles.tdText, styles.colAmount]}>
+                    {fmt(cgstAmt)}
+                  </Text>
+                </View>
+              )}
 
-            {/* SGST sub-row */}
-            {sgstRate > 0 && (
-              <View style={styles.tableRow}>
-                <Text style={[styles.tdMuted, styles.colSI]} />
-                <Text
-                  style={[
-                    styles.tdText,
-                    styles.colDesc,
-                    {
-                      textAlign: "right",
-                      paddingRight: 8,
-                      fontStyle: "italic",
-                    },
-                  ]}
-                >
-                  SGST @ {sgstRate}%
-                </Text>
-                <Text style={[styles.tdMuted, styles.colHsn]} />
-                <Text style={[styles.tdMuted, styles.colQty]} />
-                <Text style={[styles.tdMuted, styles.colRate]} />
-                <Text style={[styles.tdText, styles.colAmount]}>
-                  {fmt(sgstAmt)}
-                </Text>
-              </View>
-            )}
+              {/* SGST sub-row */}
+              {sgstRate > 0 && (
+                <View style={styles.tableRow}>
+                  <Text style={[styles.tdMuted, styles.colSI]} />
+                  <Text
+                    style={[
+                      styles.tdText,
+                      styles.colDesc,
+                      {
+                        textAlign: "right",
+                        paddingRight: 8,
+                        fontStyle: "italic",
+                      },
+                    ]}
+                  >
+                    SGST @ {sgstRate}%
+                  </Text>
+                  <Text style={[styles.tdMuted, styles.colHsn]} />
+                  <Text style={[styles.tdMuted, styles.colQty]} />
+                  <Text style={[styles.tdMuted, styles.colRate]} />
+                  <Text style={[styles.tdText, styles.colAmount]}>
+                    {fmt(sgstAmt)}
+                  </Text>
+                </View>
+              )}
 
-            {/* IGST sub-row */}
-            {igstRate > 0 && (
-              <View style={styles.tableRow}>
-                <Text style={[styles.tdMuted, styles.colSI]} />
-                <Text
-                  style={[
-                    styles.tdText,
-                    styles.colDesc,
-                    {
-                      textAlign: "right",
-                      paddingRight: 8,
-                      fontStyle: "italic",
-                    },
-                  ]}
-                >
-                  IGST @ {igstRate}%
-                </Text>
-                <Text style={[styles.tdMuted, styles.colHsn]} />
-                <Text style={[styles.tdMuted, styles.colQty]} />
-                <Text style={[styles.tdMuted, styles.colRate]} />
-                <Text style={[styles.tdText, styles.colAmount]}>
-                  {fmt(igstAmt)}
-                </Text>
-              </View>
-            )}
+              {/* IGST sub-row */}
+              {igstRate > 0 && (
+                <View style={styles.tableRow}>
+                  <Text style={[styles.tdMuted, styles.colSI]} />
+                  <Text
+                    style={[
+                      styles.tdText,
+                      styles.colDesc,
+                      {
+                        textAlign: "right",
+                        paddingRight: 8,
+                        fontStyle: "italic",
+                      },
+                    ]}
+                  >
+                    IGST @ {igstRate}%
+                  </Text>
+                  <Text style={[styles.tdMuted, styles.colHsn]} />
+                  <Text style={[styles.tdMuted, styles.colQty]} />
+                  <Text style={[styles.tdMuted, styles.colRate]} />
+                  <Text style={[styles.tdText, styles.colAmount]}>
+                    {fmt(igstAmt)}
+                  </Text>
+                </View>
+              )}
 
-            {/* Rounded off sub-row */}
-            {Math.abs(roundedOff) >= 0.005 && (
-              <View style={styles.tableRowLast}>
-                <Text style={[styles.tdMuted, styles.colSI]} />
-                <Text
-                  style={[
-                    styles.tdText,
-                    styles.colDesc,
-                    {
-                      textAlign: "right",
-                      paddingRight: 8,
-                      fontStyle: "italic",
-                    },
-                  ]}
-                >
-                  Rounded Off
-                </Text>
-                <Text style={[styles.tdMuted, styles.colHsn]} />
-                <Text style={[styles.tdMuted, styles.colQty]} />
-                <Text style={[styles.tdMuted, styles.colRate]} />
-                <Text style={[styles.tdText, styles.colAmount]}>
-                  {fmt(roundedOff)}
-                </Text>
-              </View>
+              {/* Rounded off sub-row */}
+              {Math.abs(roundedOff) >= 0.005 && (
+                <View style={styles.tableRowLast}>
+                  <Text style={[styles.tdMuted, styles.colSI]} />
+                  <Text
+                    style={[
+                      styles.tdText,
+                      styles.colDesc,
+                      {
+                        textAlign: "right",
+                        paddingRight: 8,
+                        fontStyle: "italic",
+                      },
+                    ]}
+                  >
+                    Rounded Off
+                  </Text>
+                  <Text style={[styles.tdMuted, styles.colHsn]} />
+                  <Text style={[styles.tdMuted, styles.colQty]} />
+                  <Text style={[styles.tdMuted, styles.colRate]} />
+                  <Text style={[styles.tdText, styles.colAmount]}>
+                    {fmt(roundedOff)}
+                  </Text>
+                </View>
             )}
 
             {/* Empty filler row - extends column lines through remaining space */}
