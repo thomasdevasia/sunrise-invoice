@@ -538,9 +538,10 @@ export default function NewInvoice() {
   const [sgstPct, setSgstPct] = React.useState("")
   const [igstPct, setIgstPct] = React.useState("")
 
-  const cgstAmt = subtotal * ((parseFloat(cgstPct) || 0) / 100)
-  const sgstAmt = subtotal * ((parseFloat(sgstPct) || 0) / 100)
-  const igstAmt = subtotal * ((parseFloat(igstPct) || 0) / 100)
+  const taxableAmount = subtotal + otherChargesTotal
+  const cgstAmt = taxableAmount * ((parseFloat(cgstPct) || 0) / 100)
+  const sgstAmt = taxableAmount * ((parseFloat(sgstPct) || 0) / 100)
+  const igstAmt = taxableAmount * ((parseFloat(igstPct) || 0) / 100)
   const exactTotal = subtotal + otherChargesTotal + cgstAmt + sgstAmt + igstAmt
   const grandTotal = Math.ceil(exactTotal)
   const roundedOff = grandTotal - exactTotal

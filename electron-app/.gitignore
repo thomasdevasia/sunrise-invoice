@@ -7,3 +7,6 @@
 
 # electron-builder packaged output
 /dist/
+.react-router/
+dist-electron/
+build/

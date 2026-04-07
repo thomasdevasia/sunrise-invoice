@@ -34,6 +34,10 @@ type BilledItems = {
     rate: number
     amount: number
   }[]
+  other_charges?: {
+    description: string
+    amount: number
+  }[]
   cgst_percentage: number
   sgst_percentage: number
   igst_percentage?: number
@@ -54,10 +58,12 @@ function grandTotal(billedItemsJson: string): number {
   try {
     const parsed = JSON.parse(billedItemsJson) as BilledItems
     const subtotal = parsed.items.reduce((s, i) => s + i.amount, 0)
-    const cgst = subtotal * ((parsed.cgst_percentage ?? 0) / 100)
-    const sgst = subtotal * ((parsed.sgst_percentage ?? 0) / 100)
-    const igst = subtotal * ((parsed.igst_percentage ?? 0) / 100)
-    return Math.ceil(subtotal + cgst + sgst + igst)
+    const otherChargesTotal = (parsed.other_charges ?? []).reduce((s, c) => s + c.amount, 0)
+    const taxableAmount = subtotal + otherChargesTotal
+    const cgst = taxableAmount * ((parsed.cgst_percentage ?? 0) / 100)
+    const sgst = taxableAmount * ((parsed.sgst_percentage ?? 0) / 100)
+    const igst = taxableAmount * ((parsed.igst_percentage ?? 0) / 100)
+    return Math.ceil(taxableAmount + cgst + sgst + igst)
   } catch {
     return 0
   }

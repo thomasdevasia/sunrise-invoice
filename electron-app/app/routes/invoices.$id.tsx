@@ -575,9 +575,10 @@ export default function EditInvoice() {
     (sum, charge) => sum + (parseFloat(charge.amount) || 0),
     0
   )
-  const cgstAmt = subtotal * ((parseFloat(cgstPct) || 0) / 100)
-  const sgstAmt = subtotal * ((parseFloat(sgstPct) || 0) / 100)
-  const igstAmt = subtotal * ((parseFloat(igstPct) || 0) / 100)
+  const taxableAmount = subtotal + otherChargesTotal
+  const cgstAmt = taxableAmount * ((parseFloat(cgstPct) || 0) / 100)
+  const sgstAmt = taxableAmount * ((parseFloat(sgstPct) || 0) / 100)
+  const igstAmt = taxableAmount * ((parseFloat(igstPct) || 0) / 100)
   const exactTotal = subtotal + otherChargesTotal + cgstAmt + sgstAmt + igstAmt
   const grandTotal = Math.ceil(exactTotal)
   const roundedOff = grandTotal - exactTotal
