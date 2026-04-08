@@ -732,8 +732,8 @@ export function InvoicePDFDocument({
                     fontWeight: "bold",
                     borderTopWidth: 0.5,
                     borderTopColor: B,
-                    borderBottomWidth: 0.5,
-                    borderBottomColor: B,
+                    // borderBottomWidth: 0.5,
+                    // borderBottomColor: B,
                   },
                 ]}
               >
@@ -761,6 +761,21 @@ export function InvoicePDFDocument({
                 </Text>
               </View>
             ))}
+
+            {/* line to separate other charges and taxes */}
+            <View style={{ flexDirection: "row" }}>
+              <View style={[styles.colSI, { minHeight: 0 }]} />
+              <View style={[styles.colDesc, { minHeight: 0 }]} />
+              <View style={[styles.colHsn, { minHeight: 0 }]} />
+              <View style={[styles.colQty, { minHeight: 0 }]} />
+              <View style={[styles.colRate, { minHeight: 0 }]} />
+              <View
+                style={[
+                  styles.colAmount,
+                  { minHeight: 0, borderTopWidth: 0.5, borderTopColor: B },
+                ]}
+              />
+            </View>
 
             {/* CGST sub-row */}
             {cgstRate > 0 && (

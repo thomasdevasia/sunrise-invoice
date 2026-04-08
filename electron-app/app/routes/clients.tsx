@@ -379,7 +379,7 @@ export default function Clients() {
                 <Input
                   id="emailPrimary"
                   name="emailPrimary"
-                  type="email"
+                  type="text"
                   placeholder="hello@client.com"
                   value={form.emailPrimary}
                   onChange={handleFormChange}
@@ -396,7 +396,7 @@ export default function Clients() {
                 <Input
                   id="emailSecondary"
                   name="emailSecondary"
-                  type="email"
+                  type="text"
                   placeholder="accounts@client.com"
                   value={form.emailSecondary}
                   onChange={handleFormChange}
