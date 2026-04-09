@@ -654,8 +654,10 @@ export default function EditInvoice() {
   const [saving, setSaving] = React.useState(false)
   const [deleting, setDeleting] = React.useState(false)
   const [downloading, setDownloading] = React.useState(false)
-  const [downloadingDuplicateTransporter, setDownloadingDuplicateTransporter] = React.useState(false)
-  const [downloadingDuplicateOffice, setDownloadingDuplicateOffice] = React.useState(false)
+  const [downloadingDuplicateTransporter, setDownloadingDuplicateTransporter] =
+    React.useState(false)
+  const [downloadingDuplicateOffice, setDownloadingDuplicateOffice] =
+    React.useState(false)
   const [pdfUrl, setPdfUrl] = React.useState<string | null>(null)
   const [pdfOpen, setPdfOpen] = React.useState(false)
 
@@ -842,15 +844,15 @@ export default function EditInvoice() {
     setDownloadingDuplicateOffice(true)
     try {
       const blob = await pdf(
-        <InvoicePDFDocument {...props} copyType="duplicate-office" />
+        <InvoicePDFDocument {...props} copyType="triplicate-office" />
       ).toBlob()
       const buffer = await blob.arrayBuffer()
       const result = await window.electronAPI.invoices.savePdf({
-        defaultName: `${invoiceNumber.replace(/\//g, "-")}-duplicate-office.pdf`,
+        defaultName: `${invoiceNumber.replace(/\//g, "-")}-triplicate-office.pdf`,
         buffer,
       })
       if (result.success) {
-        toast.success("Duplicate for office downloaded.")
+        toast.success("Triplicate for office downloaded.")
       }
     } catch (err: unknown) {
       toast.error(
@@ -951,22 +953,53 @@ export default function EditInvoice() {
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={downloading || downloadingDuplicateTransporter || downloadingDuplicateOffice || saving || deleting}
+                  disabled={
+                    downloading ||
+                    downloadingDuplicateTransporter ||
+                    downloadingDuplicateOffice ||
+                    saving ||
+                    deleting
+                  }
                 />
               }
             >
               <DownloadIcon className="mr-1.5 size-3.5" />
-              {downloading || downloadingDuplicateTransporter || downloadingDuplicateOffice ? "Preparing…" : "Download"}
+              {downloading ||
+              downloadingDuplicateTransporter ||
+              downloadingDuplicateOffice
+                ? "Preparing…"
+                : "Download"}
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              <DropdownMenuItem onClick={handleDownload} disabled={downloading || downloadingDuplicateTransporter || downloadingDuplicateOffice}>
+              <DropdownMenuItem
+                onClick={handleDownload}
+                disabled={
+                  downloading ||
+                  downloadingDuplicateTransporter ||
+                  downloadingDuplicateOffice
+                }
+              >
                 Original
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleDownloadDuplicateTransporter} disabled={downloading || downloadingDuplicateTransporter || downloadingDuplicateOffice}>
+              <DropdownMenuItem
+                onClick={handleDownloadDuplicateTransporter}
+                disabled={
+                  downloading ||
+                  downloadingDuplicateTransporter ||
+                  downloadingDuplicateOffice
+                }
+              >
                 Duplicate for Transporter
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleDownloadDuplicateOffice} disabled={downloading || downloadingDuplicateTransporter || downloadingDuplicateOffice}>
-                Duplicate for Office
+              <DropdownMenuItem
+                onClick={handleDownloadDuplicateOffice}
+                disabled={
+                  downloading ||
+                  downloadingDuplicateTransporter ||
+                  downloadingDuplicateOffice
+                }
+              >
+                Triplicate for Office
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

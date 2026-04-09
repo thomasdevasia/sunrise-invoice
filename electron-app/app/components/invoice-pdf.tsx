@@ -76,7 +76,7 @@ export type InvoicePDFProps = {
   cgstPct: string
   sgstPct: string
   igstPct: string
-  copyType?: "original" | "duplicate-transporter" | "duplicate-office"
+  copyType?: "original" | "duplicate-transporter" | "triplicate-office"
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -600,8 +600,8 @@ export function InvoicePDFDocument({
           <Text style={[styles.titleRight, { width: 120 }]}>
             {copyType === "duplicate-transporter"
               ? "(DUPLICATE COPY FOR TRANSPORTER)"
-              : copyType === "duplicate-office"
-                ? "(DUPLICATE COPY FOR OFFICE)"
+              : copyType === "triplicate-office"
+                ? "(TRIPLICATE COPY FOR OFFICE)"
                 : "(ORIGINAL FOR RECIPIENT)"}
           </Text>
         </View>
