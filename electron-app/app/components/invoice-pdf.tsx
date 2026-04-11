@@ -516,6 +516,355 @@ function numberToWords(amount: number): string {
   return `${base} Only`
 }
 
+// ─── Pagination ──────────────────────────────────────────────────────────────
+
+// Height constants (pt) derived from styles above
+const PAGE_HEIGHT = 777.89 // A4 (841.89) minus paddingTop(28) + paddingBottom(36)
+const TITLE_HEIGHT = 25
+const OUTER_BORDER = 1
+const INFO_ROW_BASE = 40 // padding(8*2) + sectionLabel(~11) + entityName(~13)
+const INFO_ROW_LINE = 9.5 // per detail line
+const INVOICE_BOX_HEIGHT = 78 // fixed: 4 kv rows + padding + label
+const BUYER_ROW_BASE = 40
+const BUYER_ROW_LINE = 9.5
+const TABLE_HEADER_HEIGHT = 25
+const LINE_ITEM_HEIGHT = 20
+const GRAND_TOTAL_HEIGHT = 25 // borderTop + padding + text
+const WORDS_ROW_HEIGHT = 38 // borderTop + padding + label + value
+const BANK_DETAILS_BASE = 26 // borderTop + padding + title
+const BANK_DETAIL_LINE = 12 // each bank detail item
+const DECLARATION_HEIGHT = 68 // borderTop + minHeight(64)
+const SUMMARY_ROW_HEIGHT = 20
+const SAFETY_MARGIN = 40
+
+function paginateLineItems(
+  lineItems: InvoiceLineItem[],
+  itemsPerFullPage: number,
+  itemsPerLastPage: number
+): InvoiceLineItem[][] {
+  if (lineItems.length <= itemsPerLastPage) {
+    return [lineItems]
+  }
+
+  const chunks: InvoiceLineItem[][] = []
+  let remaining = [...lineItems]
+
+  while (remaining.length > 0) {
+    if (remaining.length <= itemsPerLastPage) {
+      chunks.push(remaining)
+      remaining = []
+    } else {
+      chunks.push(remaining.slice(0, itemsPerFullPage))
+      remaining = remaining.slice(itemsPerFullPage)
+    }
+  }
+
+  return chunks
+}
+
+// ─── Sub-components ──────────────────────────────────────────────────────────
+
+function InvoiceTableHeader() {
+  return (
+    <View style={styles.tableHeader}>
+      <Text style={[styles.thText, styles.colSI]}>SI{"\n"}No.</Text>
+      <Text style={[styles.thText, styles.colDesc, { paddingLeft: 6 }]}>
+        Description of Goods / Services
+      </Text>
+      <Text style={[styles.thText, styles.colHsn]}>HSN/SAC</Text>
+      <Text style={[styles.thText, styles.colQty]}>Quantity</Text>
+      <Text style={[styles.thText, styles.colRate]}>Rate</Text>
+      <Text style={[styles.thText, styles.colAmount]}>Amount</Text>
+    </View>
+  )
+}
+
+function TableSummaryRows({
+  subtotal,
+  visibleOtherCharges,
+  cgstRate,
+  sgstRate,
+  igstRate,
+  cgstAmt,
+  sgstAmt,
+  igstAmt,
+  roundedOff,
+}: {
+  subtotal: number
+  visibleOtherCharges: { description: string; amount: number }[]
+  cgstRate: number
+  sgstRate: number
+  igstRate: number
+  cgstAmt: number
+  sgstAmt: number
+  igstAmt: number
+  roundedOff: number
+}) {
+  return (
+    <>
+      {/* Subtotal row */}
+      <View style={styles.tableRow}>
+        <Text style={[styles.tdMuted, styles.colSI]} />
+        <Text
+          style={[
+            styles.tdText,
+            styles.colDesc,
+            {
+              textAlign: "right",
+              paddingRight: 8,
+              fontWeight: "bold",
+            },
+          ]}
+        >
+          Subtotal
+        </Text>
+        <Text style={[styles.tdMuted, styles.colHsn]} />
+        <Text style={[styles.tdMuted, styles.colQty]} />
+        <Text style={[styles.tdMuted, styles.colRate]} />
+        <Text
+          style={[
+            styles.tdText,
+            styles.colAmount,
+            {
+              fontWeight: "bold",
+              borderTopWidth: 0.5,
+              borderTopColor: B,
+            },
+          ]}
+        >
+          {fmt(subtotal)}
+        </Text>
+      </View>
+
+      {/* Other charges */}
+      {visibleOtherCharges.map((charge, idx) => (
+        <View key={`charge-${idx}`} style={styles.tableRow}>
+          <Text style={[styles.tdMuted, styles.colSI]} />
+          <Text
+            style={[
+              styles.tdText,
+              styles.colDesc,
+              { textAlign: "right", paddingRight: 8 },
+            ]}
+          >
+            {charge.description || "Other Charge"}
+          </Text>
+          <Text style={[styles.tdMuted, styles.colHsn]} />
+          <Text style={[styles.tdMuted, styles.colQty]} />
+          <Text style={[styles.tdMuted, styles.colRate]} />
+          <Text style={[styles.tdText, styles.colAmount]}>
+            {fmt(charge.amount)}
+          </Text>
+        </View>
+      ))}
+
+      {/* Separator line between other charges and taxes */}
+      <View style={{ flexDirection: "row" }}>
+        <View style={[styles.colSI, { minHeight: 0 }]} />
+        <View style={[styles.colDesc, { minHeight: 0 }]} />
+        <View style={[styles.colHsn, { minHeight: 0 }]} />
+        <View style={[styles.colQty, { minHeight: 0 }]} />
+        <View style={[styles.colRate, { minHeight: 0 }]} />
+        <View
+          style={[
+            styles.colAmount,
+            { minHeight: 0, borderTopWidth: 0.5, borderTopColor: B },
+          ]}
+        />
+      </View>
+
+      {/* CGST */}
+      {cgstRate > 0 && (
+        <View style={styles.tableRow}>
+          <Text style={[styles.tdMuted, styles.colSI]} />
+          <Text
+            style={[
+              styles.tdText,
+              styles.colDesc,
+              {
+                textAlign: "right",
+                paddingRight: 8,
+                fontStyle: "italic",
+              },
+            ]}
+          >
+            CGST @ {cgstRate}%
+          </Text>
+          <Text style={[styles.tdMuted, styles.colHsn]} />
+          <Text style={[styles.tdMuted, styles.colQty]} />
+          <Text style={[styles.tdMuted, styles.colRate]} />
+          <Text style={[styles.tdText, styles.colAmount]}>{fmt(cgstAmt)}</Text>
+        </View>
+      )}
+
+      {/* SGST */}
+      {sgstRate > 0 && (
+        <View style={styles.tableRow}>
+          <Text style={[styles.tdMuted, styles.colSI]} />
+          <Text
+            style={[
+              styles.tdText,
+              styles.colDesc,
+              {
+                textAlign: "right",
+                paddingRight: 8,
+                fontStyle: "italic",
+              },
+            ]}
+          >
+            SGST @ {sgstRate}%
+          </Text>
+          <Text style={[styles.tdMuted, styles.colHsn]} />
+          <Text style={[styles.tdMuted, styles.colQty]} />
+          <Text style={[styles.tdMuted, styles.colRate]} />
+          <Text style={[styles.tdText, styles.colAmount]}>{fmt(sgstAmt)}</Text>
+        </View>
+      )}
+
+      {/* IGST */}
+      {igstRate > 0 && (
+        <View style={styles.tableRow}>
+          <Text style={[styles.tdMuted, styles.colSI]} />
+          <Text
+            style={[
+              styles.tdText,
+              styles.colDesc,
+              {
+                textAlign: "right",
+                paddingRight: 8,
+                fontStyle: "italic",
+              },
+            ]}
+          >
+            IGST @ {igstRate}%
+          </Text>
+          <Text style={[styles.tdMuted, styles.colHsn]} />
+          <Text style={[styles.tdMuted, styles.colQty]} />
+          <Text style={[styles.tdMuted, styles.colRate]} />
+          <Text style={[styles.tdText, styles.colAmount]}>{fmt(igstAmt)}</Text>
+        </View>
+      )}
+
+      {/* Rounded off */}
+      {Math.abs(roundedOff) >= 0.005 && (
+        <View style={styles.tableRowLast}>
+          <Text style={[styles.tdMuted, styles.colSI]} />
+          <Text
+            style={[
+              styles.tdText,
+              styles.colDesc,
+              {
+                textAlign: "right",
+                paddingRight: 8,
+                fontStyle: "italic",
+              },
+            ]}
+          >
+            Rounded Off
+          </Text>
+          <Text style={[styles.tdMuted, styles.colHsn]} />
+          <Text style={[styles.tdMuted, styles.colQty]} />
+          <Text style={[styles.tdMuted, styles.colRate]} />
+          <Text style={[styles.tdText, styles.colAmount]}>
+            {fmt(roundedOff)}
+          </Text>
+        </View>
+      )}
+    </>
+  )
+}
+
+function InvoiceFooterSections({
+  grandTotal,
+  company,
+  isLastPage,
+}: {
+  grandTotal: number
+  company: InvoiceCompany
+  isLastPage: boolean
+}) {
+  return (
+    <>
+      {/* Grand total row — value only on last page */}
+      <View style={styles.totalRow}>
+        <Text style={[styles.tdMuted, styles.colSI]} />
+        <Text style={[styles.totalLabel]}>Total</Text>
+        <Text style={styles.totalValue}>
+          {isLastPage ? `₹ ${fmt(grandTotal)}` : "—"}
+        </Text>
+      </View>
+
+      {/* Amount in words — only on last page */}
+      <View style={styles.wordsRow}>
+        <Text style={styles.wordsLabel}>Amount Chargeable (in words)</Text>
+        <Text style={styles.wordsValue}>
+          {isLastPage ? numberToWords(grandTotal) : "—"}
+        </Text>
+      </View>
+
+      {/* Bank Details */}
+      {(company.bankName ||
+        company.bankAccountNumber ||
+        company.bankBranch ||
+        company.bankIfsc) && (
+        <View style={styles.bankDetailsRow}>
+          <Text style={styles.bankDetailsTitle}>Company's Bank Details</Text>
+          {company.bankName ? (
+            <View style={styles.bankDetailItem}>
+              <Text style={styles.bankDetailKey}>Bank Name</Text>
+              <Text style={styles.bankDetailColon}>:</Text>
+              <Text style={styles.bankDetailVal}>{company.bankName}</Text>
+            </View>
+          ) : null}
+          {company.bankAccountNumber ? (
+            <View style={styles.bankDetailItem}>
+              <Text style={styles.bankDetailKey}>A/c No.</Text>
+              <Text style={styles.bankDetailColon}>:</Text>
+              <Text style={styles.bankDetailVal}>
+                {company.bankAccountNumber}
+              </Text>
+            </View>
+          ) : null}
+          {company.bankBranch || company.bankIfsc ? (
+            <View style={styles.bankDetailItem}>
+              <Text style={styles.bankDetailKey}>Branch & IFS Code</Text>
+              <Text style={styles.bankDetailColon}>:</Text>
+              <Text style={styles.bankDetailVal}>
+                {[company.bankBranch, company.bankIfsc]
+                  .filter(Boolean)
+                  .join(" & ")}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+      )}
+
+      {/* Declaration / Authorised Signatory */}
+      <View style={styles.declarationRow}>
+        <View style={styles.declarationBox}>
+          <Text style={styles.declarationTitle}>Declaration</Text>
+          <Text style={styles.declarationText}>
+            We declare that this invoice shows the actual price of the goods
+            described and that all particulars are true and correct.
+          </Text>
+        </View>
+        <View style={styles.signatoryBox}>
+          <Text
+            style={{
+              fontSize: 7,
+              color: "#444444",
+              alignSelf: "flex-start",
+            }}
+          >
+            for {company.name}
+          </Text>
+          <Text style={styles.signatoryLabel}>Authorised Signatory</Text>
+        </View>
+      </View>
+    </>
+  )
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function InvoicePDFDocument({
@@ -590,393 +939,380 @@ export function InvoicePDFDocument({
     shipTo.emailSecondary ? `Email 2: ${shipTo.emailSecondary}` : "",
   ].filter(Boolean)
 
+  // ── Pagination ──
+  const sellerHeight = Math.max(
+    INFO_ROW_BASE + companyDetailLines.length * INFO_ROW_LINE,
+    INVOICE_BOX_HEIGHT
+  )
+  const buyerHeight =
+    BUYER_ROW_BASE +
+    Math.max(billToLines.length, shipToLines.length) * BUYER_ROW_LINE
+  const chromeHeight =
+    TITLE_HEIGHT +
+    OUTER_BORDER +
+    sellerHeight +
+    buyerHeight +
+    TABLE_HEADER_HEIGHT
+  console.log("chromeHeight", chromeHeight)
+  console.log("sellerHeight", sellerHeight)
+  console.log("buyerHeight", buyerHeight)
+  console.log("TABLE_HEADER_HEIGHT", TABLE_HEADER_HEIGHT)
+  console.log("SAFETY_MARGIN", SAFETY_MARGIN)
+
+  const hasBankDetails =
+    company.bankName ||
+    company.bankAccountNumber ||
+    company.bankBranch ||
+    company.bankIfsc
+  const bankDetailLineCount =
+    (company.bankName ? 1 : 0) +
+    (company.bankAccountNumber ? 1 : 0) +
+    (company.bankBranch || company.bankIfsc ? 1 : 0)
+  const bankHeight = hasBankDetails
+    ? BANK_DETAILS_BASE + bankDetailLineCount * BANK_DETAIL_LINE
+    : 0
+
+  const footerSectionsHeight =
+    GRAND_TOTAL_HEIGHT + WORDS_ROW_HEIGHT + bankHeight + DECLARATION_HEIGHT
+
+  // bodySpace = space available for the flowing rows (line items + summary rows).
+  // footer sections (grand total, words, bank, declaration) are fixed on every page
+  // and are already deducted here.
+  const bodySpace = PAGE_HEIGHT - chromeHeight - SAFETY_MARGIN - footerSectionsHeight
+  console.log("bodySpace", bodySpace)
+
+  // ── Build a unified flat list of all rows that will flow/paginate together ──
+  type PdfRow =
+    | { kind: "lineItem"; item: InvoiceLineItem; globalIndex: number }
+    | { kind: "subtotal" }
+    | { kind: "otherCharge"; description: string; amount: number }
+    | { kind: "cgst"; rate: number; amount: number }
+    | { kind: "sgst"; rate: number; amount: number }
+    | { kind: "igst"; rate: number; amount: number }
+    | { kind: "roundedOff"; amount: number }
+
+  const allRows: PdfRow[] = [
+    ...lineItems.map((item, i) => ({
+      kind: "lineItem" as const,
+      item,
+      globalIndex: i,
+    })),
+    { kind: "subtotal" as const },
+    ...visibleOtherCharges.map((c) => ({
+      kind: "otherCharge" as const,
+      description: c.description,
+      amount: c.amount,
+    })),
+    ...(cgstRate > 0 ? [{ kind: "cgst" as const, rate: cgstRate, amount: cgstAmt }] : []),
+    ...(sgstRate > 0 ? [{ kind: "sgst" as const, rate: sgstRate, amount: sgstAmt }] : []),
+    ...(igstRate > 0 ? [{ kind: "igst" as const, rate: igstRate, amount: igstAmt }] : []),
+    ...(Math.abs(roundedOff) >= 0.005
+      ? [{ kind: "roundedOff" as const, amount: roundedOff }]
+      : []),
+  ]
+
+  const rowsPerPage = Math.max(1, Math.floor(bodySpace / LINE_ITEM_HEIGHT))
+  console.log("rowsPerPage", rowsPerPage)
+
+  // Slice allRows into uniform pages
+  const chunks: PdfRow[][] = []
+  for (let i = 0; i < allRows.length; i += rowsPerPage) {
+    chunks.push(allRows.slice(i, i + rowsPerPage))
+  }
+  const totalPages = chunks.length
+  console.log("totalPages", totalPages)
+
   return (
     <Document>
-      <Page size="A4" style={styles.page}>
-        {/* ── Title row (no border) ── */}
-        <View style={styles.titleRow}>
-          <Text style={{ width: 120, fontSize: 7 }} />
-          <Text style={styles.titleCenter}>TAX INVOICE</Text>
-          <Text style={[styles.titleRight, { width: 120 }]}>
-            {copyType === "duplicate-transporter"
-              ? "(DUPLICATE COPY FOR TRANSPORTER)"
-              : copyType === "triplicate-office"
-                ? "(TRIPLICATE COPY FOR OFFICE)"
-                : "(ORIGINAL FOR RECIPIENT)"}
-          </Text>
-        </View>
+      {chunks.map((chunk, pageIdx) => {
+        const isLastPage = pageIdx === totalPages - 1
 
-        <View style={styles.outer}>
-          {/* ── Seller / Invoice info ── */}
-          <View style={styles.infoRow}>
-            {/* Seller details */}
-            <View style={styles.sellerBox}>
-              <Text style={styles.sectionLabel}>Seller</Text>
-              <Text style={styles.entityName}>{company.name}</Text>
-              {companyDetailLines.map((line, i) => (
-                <Text key={i} style={styles.detailLine}>
-                  {line}
-                </Text>
-              ))}
-            </View>
-
-            {/* Invoice meta */}
-            <View style={styles.invoiceBox}>
-              <Text style={styles.sectionLabel}>Invoice Details</Text>
-              <View style={styles.kvRow}>
-                <Text style={styles.kvKey}>Invoice No.</Text>
-                <Text style={styles.kvVal}>{invoiceNumber}</Text>
-              </View>
-              <View style={styles.kvRow}>
-                <Text style={styles.kvKey}>Date</Text>
-                <Text style={styles.kvVal}>{formatDate(invoiceDate)}</Text>
-              </View>
-              <View style={styles.kvRow}>
-                <Text style={styles.kvKey}>Transport</Text>
-                <Text style={styles.kvVal}>{printable(transportMode)}</Text>
-              </View>
-              <View style={styles.kvRow}>
-                <Text style={styles.kvKey}>Vehicle No.</Text>
-                <Text style={styles.kvVal}>{printable(vehicleNumber)}</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* ── Buyer row ── */}
-          <View style={styles.buyerRow}>
-            <View style={styles.billToBox}>
-              <Text style={styles.sectionLabel}>Bill To</Text>
-              <Text style={styles.entityName}>{billTo.name}</Text>
-              {billToLines.map((line, i) => (
-                <Text key={i} style={styles.detailLine}>
-                  {line}
-                </Text>
-              ))}
-            </View>
-            <View style={styles.shipToBox}>
-              <Text style={styles.sectionLabel}>Ship To</Text>
-              <Text style={styles.entityName}>{shipTo.name}</Text>
-              {shipToLines.map((line, i) => (
-                <Text key={i} style={styles.detailLine}>
-                  {line}
-                </Text>
-              ))}
-            </View>
-          </View>
-
-          {/* ── Line items table ── */}
-          <View style={{ flex: 1 }}>
-            {/* Table header */}
-            <View style={styles.tableHeader}>
-              <Text style={[styles.thText, styles.colSI]}>SI{"\n"}No.</Text>
-              <Text style={[styles.thText, styles.colDesc, { paddingLeft: 6 }]}>
-                Description of Goods / Services
+        return (
+          <Page key={pageIdx} size="A4" style={styles.page}>
+            {/* ── Title row ── */}
+            <View style={styles.titleRow}>
+              <Text style={{ width: 120, fontSize: 7 }}>
+                {totalPages > 1 ? `Page ${pageIdx + 1} of ${totalPages}` : ""}
               </Text>
-              <Text style={[styles.thText, styles.colHsn]}>HSN/SAC</Text>
-              <Text style={[styles.thText, styles.colQty]}>Quantity</Text>
-              <Text style={[styles.thText, styles.colRate]}>Rate</Text>
-              <Text style={[styles.thText, styles.colAmount]}>Amount</Text>
+              <Text style={styles.titleCenter}>TAX INVOICE</Text>
+              <Text style={[styles.titleRight, { width: 120 }]}>
+                {copyType === "duplicate-transporter"
+                  ? "(DUPLICATE COPY FOR TRANSPORTER)"
+                  : copyType === "triplicate-office"
+                    ? "(TRIPLICATE COPY FOR OFFICE)"
+                    : "(ORIGINAL FOR RECIPIENT)"}
+              </Text>
             </View>
 
-            {/* Line item rows */}
-            {lineItems.map((row, idx) => {
-              const qty = parseFloat(row.quantity) || 0
-              const rate = parseFloat(row.rate) || 0
-              const amount = qty * rate
-              return (
-                <View key={idx} style={styles.tableRow}>
-                  <Text style={[styles.tdMuted, styles.colSI]}>{idx + 1}</Text>
-                  <Text style={[styles.tdText, styles.colDesc]}>
-                    {row.description || "—"}
-                  </Text>
-                  <Text style={[styles.tdText, styles.colHsn]}>
-                    {row.hsnSac || "—"}
-                  </Text>
-                  <Text style={[styles.tdText, styles.colQty]}>
-                    {qty > 0 ? String(qty) : "—"}
-                  </Text>
-                  <Text style={[styles.tdText, styles.colRate]}>
-                    {rate > 0 ? fmt(rate) : "—"}
-                  </Text>
-                  <Text style={[styles.tdText, styles.colAmount]}>
-                    {amount > 0 ? fmt(amount) : "—"}
-                  </Text>
+            <View style={styles.outer}>
+              {/* ── Seller / Invoice info ── */}
+              <View style={styles.infoRow}>
+                <View style={styles.sellerBox}>
+                  <Text style={styles.sectionLabel}>Seller</Text>
+                  <Text style={styles.entityName}>{company.name}</Text>
+                  {companyDetailLines.map((line, i) => (
+                    <Text key={i} style={styles.detailLine}>
+                      {line}
+                    </Text>
+                  ))}
                 </View>
-              )
-            })}
 
-            {/* Subtotal row — bordered top and bottom, skipping SI No column */}
-            <View style={styles.tableRow}>
-              <Text style={[styles.tdMuted, styles.colSI]} />
-              <Text
-                style={[
-                  styles.tdText,
-                  styles.colDesc,
-                  {
-                    textAlign: "right",
-                    paddingRight: 8,
-                    fontWeight: "bold",
-                  },
-                ]}
-              >
-                Subtotal
-              </Text>
-              <Text style={[styles.tdMuted, styles.colHsn]} />
-              <Text style={[styles.tdMuted, styles.colQty]} />
-              <Text style={[styles.tdMuted, styles.colRate]} />
-              <Text
-                style={[
-                  styles.tdText,
-                  styles.colAmount,
-                  {
-                    fontWeight: "bold",
-                    borderTopWidth: 0.5,
-                    borderTopColor: B,
-                    // borderBottomWidth: 0.5,
-                    // borderBottomColor: B,
-                  },
-                ]}
-              >
-                {fmt(subtotal)}
-              </Text>
-            </View>
-
-            {visibleOtherCharges.map((charge, idx) => (
-              <View key={`charge-${idx}`} style={styles.tableRow}>
-                <Text style={[styles.tdMuted, styles.colSI]} />
-                <Text
-                  style={[
-                    styles.tdText,
-                    styles.colDesc,
-                    { textAlign: "right", paddingRight: 8 },
-                  ]}
-                >
-                  {charge.description || "Other Charge"}
-                </Text>
-                <Text style={[styles.tdMuted, styles.colHsn]} />
-                <Text style={[styles.tdMuted, styles.colQty]} />
-                <Text style={[styles.tdMuted, styles.colRate]} />
-                <Text style={[styles.tdText, styles.colAmount]}>
-                  {fmt(charge.amount)}
-                </Text>
+                <View style={styles.invoiceBox}>
+                  <Text style={styles.sectionLabel}>Invoice Details</Text>
+                  <View style={styles.kvRow}>
+                    <Text style={styles.kvKey}>Invoice No.</Text>
+                    <Text style={styles.kvVal}>{invoiceNumber}</Text>
+                  </View>
+                  <View style={styles.kvRow}>
+                    <Text style={styles.kvKey}>Date</Text>
+                    <Text style={styles.kvVal}>{formatDate(invoiceDate)}</Text>
+                  </View>
+                  <View style={styles.kvRow}>
+                    <Text style={styles.kvKey}>Transport</Text>
+                    <Text style={styles.kvVal}>{printable(transportMode)}</Text>
+                  </View>
+                  <View style={styles.kvRow}>
+                    <Text style={styles.kvKey}>Vehicle No.</Text>
+                    <Text style={styles.kvVal}>{printable(vehicleNumber)}</Text>
+                  </View>
+                </View>
               </View>
-            ))}
 
-            {/* line to separate other charges and taxes */}
-            <View style={{ flexDirection: "row" }}>
-              <View style={[styles.colSI, { minHeight: 0 }]} />
-              <View style={[styles.colDesc, { minHeight: 0 }]} />
-              <View style={[styles.colHsn, { minHeight: 0 }]} />
-              <View style={[styles.colQty, { minHeight: 0 }]} />
-              <View style={[styles.colRate, { minHeight: 0 }]} />
-              <View
-                style={[
-                  styles.colAmount,
-                  { minHeight: 0, borderTopWidth: 0.5, borderTopColor: B },
-                ]}
+              {/* ── Buyer row ── */}
+              <View style={styles.buyerRow}>
+                <View style={styles.billToBox}>
+                  <Text style={styles.sectionLabel}>Bill To</Text>
+                  <Text style={styles.entityName}>{billTo.name}</Text>
+                  {billToLines.map((line, i) => (
+                    <Text key={i} style={styles.detailLine}>
+                      {line}
+                    </Text>
+                  ))}
+                </View>
+                <View style={styles.shipToBox}>
+                  <Text style={styles.sectionLabel}>Ship To</Text>
+                  <Text style={styles.entityName}>{shipTo.name}</Text>
+                  {shipToLines.map((line, i) => (
+                    <Text key={i} style={styles.detailLine}>
+                      {line}
+                    </Text>
+                  ))}
+                </View>
+              </View>
+
+              {/* ── Line items table ── */}
+              <View style={{ flex: 1 }}>
+                <InvoiceTableHeader />
+
+                {/* All rows flow together: line items + summary rows */}
+                {chunk.map((row, idx) => {
+                  if (row.kind === "lineItem") {
+                    const qty = parseFloat(row.item.quantity) || 0
+                    const rate = parseFloat(row.item.rate) || 0
+                    const amount = qty * rate
+                    return (
+                      <View key={idx} style={styles.tableRow}>
+                        <Text style={[styles.tdMuted, styles.colSI]}>
+                          {row.globalIndex + 1}
+                        </Text>
+                        <Text style={[styles.tdText, styles.colDesc]}>
+                          {row.item.description || "\u2014"}
+                        </Text>
+                        <Text style={[styles.tdText, styles.colHsn]}>
+                          {row.item.hsnSac || "\u2014"}
+                        </Text>
+                        <Text style={[styles.tdText, styles.colQty]}>
+                          {qty > 0 ? String(qty) : "\u2014"}
+                        </Text>
+                        <Text style={[styles.tdText, styles.colRate]}>
+                          {rate > 0 ? fmt(rate) : "\u2014"}
+                        </Text>
+                        <Text style={[styles.tdText, styles.colAmount]}>
+                          {amount > 0 ? fmt(amount) : "\u2014"}
+                        </Text>
+                      </View>
+                    )
+                  }
+
+                  if (row.kind === "subtotal") {
+                    return (
+                      <View key={idx} style={styles.tableRow}>
+                        <Text style={[styles.tdMuted, styles.colSI]} />
+                        <Text
+                          style={[
+                            styles.tdText,
+                            styles.colDesc,
+                            { textAlign: "right", paddingRight: 8, fontWeight: "bold" },
+                          ]}
+                        >
+                          Subtotal
+                        </Text>
+                        <Text style={[styles.tdMuted, styles.colHsn]} />
+                        <Text style={[styles.tdMuted, styles.colQty]} />
+                        <Text style={[styles.tdMuted, styles.colRate]} />
+                        <Text
+                          style={[
+                            styles.tdText,
+                            styles.colAmount,
+                            { fontWeight: "bold", borderTopWidth: 0.5, borderTopColor: B },
+                          ]}
+                        >
+                          {fmt(subtotal)}
+                        </Text>
+                      </View>
+                    )
+                  }
+
+                  if (row.kind === "otherCharge") {
+                    return (
+                      <View key={idx} style={styles.tableRow}>
+                        <Text style={[styles.tdMuted, styles.colSI]} />
+                        <Text
+                          style={[
+                            styles.tdText,
+                            styles.colDesc,
+                            { textAlign: "right", paddingRight: 8 },
+                          ]}
+                        >
+                          {row.description || "Other Charge"}
+                        </Text>
+                        <Text style={[styles.tdMuted, styles.colHsn]} />
+                        <Text style={[styles.tdMuted, styles.colQty]} />
+                        <Text style={[styles.tdMuted, styles.colRate]} />
+                        <Text style={[styles.tdText, styles.colAmount]}>
+                          {fmt(row.amount)}
+                        </Text>
+                      </View>
+                    )
+                  }
+
+                  if (row.kind === "cgst") {
+                    return (
+                      <View key={idx} style={styles.tableRow}>
+                        <Text style={[styles.tdMuted, styles.colSI]} />
+                        <Text
+                          style={[
+                            styles.tdText,
+                            styles.colDesc,
+                            { textAlign: "right", paddingRight: 8, fontStyle: "italic" },
+                          ]}
+                        >
+                          CGST @ {row.rate}%
+                        </Text>
+                        <Text style={[styles.tdMuted, styles.colHsn]} />
+                        <Text style={[styles.tdMuted, styles.colQty]} />
+                        <Text style={[styles.tdMuted, styles.colRate]} />
+                        <Text style={[styles.tdText, styles.colAmount]}>
+                          {fmt(row.amount)}
+                        </Text>
+                      </View>
+                    )
+                  }
+
+                  if (row.kind === "sgst") {
+                    return (
+                      <View key={idx} style={styles.tableRow}>
+                        <Text style={[styles.tdMuted, styles.colSI]} />
+                        <Text
+                          style={[
+                            styles.tdText,
+                            styles.colDesc,
+                            { textAlign: "right", paddingRight: 8, fontStyle: "italic" },
+                          ]}
+                        >
+                          SGST @ {row.rate}%
+                        </Text>
+                        <Text style={[styles.tdMuted, styles.colHsn]} />
+                        <Text style={[styles.tdMuted, styles.colQty]} />
+                        <Text style={[styles.tdMuted, styles.colRate]} />
+                        <Text style={[styles.tdText, styles.colAmount]}>
+                          {fmt(row.amount)}
+                        </Text>
+                      </View>
+                    )
+                  }
+
+                  if (row.kind === "igst") {
+                    return (
+                      <View key={idx} style={styles.tableRow}>
+                        <Text style={[styles.tdMuted, styles.colSI]} />
+                        <Text
+                          style={[
+                            styles.tdText,
+                            styles.colDesc,
+                            { textAlign: "right", paddingRight: 8, fontStyle: "italic" },
+                          ]}
+                        >
+                          IGST @ {row.rate}%
+                        </Text>
+                        <Text style={[styles.tdMuted, styles.colHsn]} />
+                        <Text style={[styles.tdMuted, styles.colQty]} />
+                        <Text style={[styles.tdMuted, styles.colRate]} />
+                        <Text style={[styles.tdText, styles.colAmount]}>
+                          {fmt(row.amount)}
+                        </Text>
+                      </View>
+                    )
+                  }
+
+                  if (row.kind === "roundedOff") {
+                    return (
+                      <View key={idx} style={styles.tableRowLast}>
+                        <Text style={[styles.tdMuted, styles.colSI]} />
+                        <Text
+                          style={[
+                            styles.tdText,
+                            styles.colDesc,
+                            { textAlign: "right", paddingRight: 8, fontStyle: "italic" },
+                          ]}
+                        >
+                          Rounded Off
+                        </Text>
+                        <Text style={[styles.tdMuted, styles.colHsn]} />
+                        <Text style={[styles.tdMuted, styles.colQty]} />
+                        <Text style={[styles.tdMuted, styles.colRate]} />
+                        <Text style={[styles.tdText, styles.colAmount]}>
+                          {fmt(row.amount)}
+                        </Text>
+                      </View>
+                    )
+                  }
+
+                  return null
+                })}
+
+                {/* Filler row — extends column lines through remaining space */}
+                <View style={{ flexDirection: "row", flex: 1 }}>
+                  <View style={styles.colSI} />
+                  <View style={styles.colDesc} />
+                  <View style={styles.colHsn} />
+                  <View style={styles.colQty} />
+                  <View style={styles.colRate} />
+                  <View style={styles.colAmount} />
+                </View>
+              </View>
+              {/* end table wrapper */}
+
+              {/* Footer sections on every page */}
+              <InvoiceFooterSections
+                grandTotal={grandTotal}
+                company={company}
+                isLastPage={isLastPage}
               />
             </View>
 
-            {/* CGST sub-row */}
-            {cgstRate > 0 && (
-              <View style={styles.tableRow}>
-                <Text style={[styles.tdMuted, styles.colSI]} />
-                <Text
-                  style={[
-                    styles.tdText,
-                    styles.colDesc,
-                    {
-                      textAlign: "right",
-                      paddingRight: 8,
-                      fontStyle: "italic",
-                    },
-                  ]}
-                >
-                  CGST @ {cgstRate}%
-                </Text>
-                <Text style={[styles.tdMuted, styles.colHsn]} />
-                <Text style={[styles.tdMuted, styles.colQty]} />
-                <Text style={[styles.tdMuted, styles.colRate]} />
-                <Text style={[styles.tdText, styles.colAmount]}>
-                  {fmt(cgstAmt)}
-                </Text>
-              </View>
-            )}
-
-            {/* SGST sub-row */}
-            {sgstRate > 0 && (
-              <View style={styles.tableRow}>
-                <Text style={[styles.tdMuted, styles.colSI]} />
-                <Text
-                  style={[
-                    styles.tdText,
-                    styles.colDesc,
-                    {
-                      textAlign: "right",
-                      paddingRight: 8,
-                      fontStyle: "italic",
-                    },
-                  ]}
-                >
-                  SGST @ {sgstRate}%
-                </Text>
-                <Text style={[styles.tdMuted, styles.colHsn]} />
-                <Text style={[styles.tdMuted, styles.colQty]} />
-                <Text style={[styles.tdMuted, styles.colRate]} />
-                <Text style={[styles.tdText, styles.colAmount]}>
-                  {fmt(sgstAmt)}
-                </Text>
-              </View>
-            )}
-
-            {/* IGST sub-row */}
-            {igstRate > 0 && (
-              <View style={styles.tableRow}>
-                <Text style={[styles.tdMuted, styles.colSI]} />
-                <Text
-                  style={[
-                    styles.tdText,
-                    styles.colDesc,
-                    {
-                      textAlign: "right",
-                      paddingRight: 8,
-                      fontStyle: "italic",
-                    },
-                  ]}
-                >
-                  IGST @ {igstRate}%
-                </Text>
-                <Text style={[styles.tdMuted, styles.colHsn]} />
-                <Text style={[styles.tdMuted, styles.colQty]} />
-                <Text style={[styles.tdMuted, styles.colRate]} />
-                <Text style={[styles.tdText, styles.colAmount]}>
-                  {fmt(igstAmt)}
-                </Text>
-              </View>
-            )}
-
-            {/* Rounded off sub-row */}
-            {Math.abs(roundedOff) >= 0.005 && (
-              <View style={styles.tableRowLast}>
-                <Text style={[styles.tdMuted, styles.colSI]} />
-                <Text
-                  style={[
-                    styles.tdText,
-                    styles.colDesc,
-                    {
-                      textAlign: "right",
-                      paddingRight: 8,
-                      fontStyle: "italic",
-                    },
-                  ]}
-                >
-                  Rounded Off
-                </Text>
-                <Text style={[styles.tdMuted, styles.colHsn]} />
-                <Text style={[styles.tdMuted, styles.colQty]} />
-                <Text style={[styles.tdMuted, styles.colRate]} />
-                <Text style={[styles.tdText, styles.colAmount]}>
-                  {fmt(roundedOff)}
-                </Text>
-              </View>
-            )}
-
-            {/* Empty filler row - extends column lines through remaining space */}
-            <View style={{ flexDirection: "row", flex: 1 }}>
-              <View style={styles.colSI} />
-              <View style={styles.colDesc} />
-              <View style={styles.colHsn} />
-              <View style={styles.colQty} />
-              <View style={styles.colRate} />
-              <View style={styles.colAmount} />
-            </View>
-          </View>
-          {/* end table wrapper */}
-
-          {/* Grand total row */}
-          <View style={styles.totalRow}>
-            <Text style={[styles.tdMuted, styles.colSI]} />
-            <Text style={[styles.totalLabel]}>Total</Text>
-            <Text style={styles.totalValue}>₹ {fmt(grandTotal)}</Text>
-          </View>
-
-          {/* ── Amount in words ── */}
-          <View style={styles.wordsRow}>
-            <Text style={styles.wordsLabel}>Amount Chargeable (in words)</Text>
-            <Text style={styles.wordsValue}>{numberToWords(grandTotal)}</Text>
-          </View>
-
-          {/* ── Bank Details ── */}
-          {(company.bankName ||
-            company.bankAccountNumber ||
-            company.bankBranch ||
-            company.bankIfsc) && (
-            <View style={styles.bankDetailsRow}>
-              <Text style={styles.bankDetailsTitle}>
-                Company's Bank Details
+            {/* ── Footer (absolute bottom of page) ── */}
+            <View style={styles.footer} fixed>
+              <Text style={styles.footerText}>
+                SUBJECT TO DELHI JURISDICTION
               </Text>
-              {company.bankName ? (
-                <View style={styles.bankDetailItem}>
-                  <Text style={styles.bankDetailKey}>Bank Name</Text>
-                  <Text style={styles.bankDetailColon}>:</Text>
-                  <Text style={styles.bankDetailVal}>{company.bankName}</Text>
-                </View>
-              ) : null}
-              {company.bankAccountNumber ? (
-                <View style={styles.bankDetailItem}>
-                  <Text style={styles.bankDetailKey}>A/c No.</Text>
-                  <Text style={styles.bankDetailColon}>:</Text>
-                  <Text style={styles.bankDetailVal}>
-                    {company.bankAccountNumber}
-                  </Text>
-                </View>
-              ) : null}
-              {company.bankBranch || company.bankIfsc ? (
-                <View style={styles.bankDetailItem}>
-                  <Text style={styles.bankDetailKey}>Branch & IFS Code</Text>
-                  <Text style={styles.bankDetailColon}>:</Text>
-                  <Text style={styles.bankDetailVal}>
-                    {[company.bankBranch, company.bankIfsc]
-                      .filter(Boolean)
-                      .join(" & ")}
-                  </Text>
-                </View>
-              ) : null}
-            </View>
-          )}
-
-          {/* ── Declaration / Authorised Signatory ── */}
-          <View style={styles.declarationRow}>
-            <View style={styles.declarationBox}>
-              <Text style={styles.declarationTitle}>Declaration</Text>
-              <Text style={styles.declarationText}>
-                We declare that this invoice shows the actual price of the goods
-                described and that all particulars are true and correct.
+              <Text style={styles.footerText}>
+                This is a Computer Generated Invoice
               </Text>
             </View>
-            <View style={styles.signatoryBox}>
-              <Text
-                style={{
-                  fontSize: 7,
-                  color: "#444444",
-                  alignSelf: "flex-start",
-                }}
-              >
-                for {company.name}
-              </Text>
-              <Text style={styles.signatoryLabel}>Authorised Signatory</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* ── Footer (absolute bottom of page) ── */}
-        <View style={styles.footer} fixed>
-          <Text style={styles.footerText}>SUBJECT TO DELHI JURISDICTION</Text>
-          <Text style={styles.footerText}>
-            This is a Computer Generated Invoice
-          </Text>
-        </View>
-      </Page>
+          </Page>
+        )
+      })}
     </Document>
   )
 }
