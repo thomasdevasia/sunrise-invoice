@@ -139,14 +139,10 @@ function getInitials(name: string): string {
     .toUpperCase()
 }
 
-function buildInvoiceNumber(
-  count: number,
-  companyName: string,
-  fy: string
-): string {
+function buildInvoiceNumber(count: number): string {
+  const yy = String(new Date().getFullYear()).slice(-2)
   const paddedCount = String(count).padStart(3, "0")
-  const initials = getInitials(companyName)
-  return `${paddedCount}/${initials}/${fy}`
+  return `TI${yy}/${paddedCount}`
 }
 
 function emptyParty(): PartyForm {
@@ -560,7 +556,7 @@ export default function NewInvoice() {
       .getMaxSeqForCompany(selectedCompany.id)
       .then((maxSeq) => {
         setInvoiceNumber(
-          buildInvoiceNumber(maxSeq + 1, selectedCompany.name, fy)
+          buildInvoiceNumber(maxSeq + 1)
         )
       })
   }, [selectedCompany, fy])
