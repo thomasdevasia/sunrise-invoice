@@ -552,6 +552,7 @@ export default function NewInvoice() {
       setInvoiceNumber("")
       return
     }
+    console.log("Fetching max sequence for company", selectedCompany.id)
     void window.electronAPI.invoices
       .getMaxSeqForCompany(selectedCompany.id)
       .then((maxSeq) => {
@@ -905,9 +906,9 @@ export default function NewInvoice() {
                     <td className="px-3 py-1.5 font-mono text-sm">
                       {amount > 0
                         ? amount.toLocaleString("en-IN", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })
                         : "—"}
                     </td>
                     <td className="px-3 py-1.5">
