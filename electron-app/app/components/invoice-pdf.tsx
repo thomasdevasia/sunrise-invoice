@@ -217,6 +217,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     minHeight: 20,
   },
+  tableRowDivider: {
+    flexDirection: "row",
+    minHeight: 20,
+    borderTopWidth: 0.5,
+    borderTopColor: B,
+  },
   tableRowLast: {
     flexDirection: "row",
     minHeight: 20,
@@ -603,8 +609,8 @@ function TableSummaryRows({
   return (
     <>
       {/* Subtotal row */}
-      <View style={styles.tableRow}>
-        <Text style={[styles.tdMuted, styles.colSI]} />
+      <View style={styles.tableRowDivider}>
+        <Text style={[styles.tdMuted, styles.colSI, { borderRightWidth: 0 }]} />
         <Text
           style={[
             styles.tdText,
@@ -612,46 +618,48 @@ function TableSummaryRows({
             {
               textAlign: "right",
               paddingRight: 8,
-              fontWeight: "bold",
+              borderRightWidth: 0,
             },
           ]}
         >
           Subtotal
         </Text>
-        <Text style={[styles.tdMuted, styles.colHsn]} />
-        <Text style={[styles.tdMuted, styles.colQty]} />
-        <Text style={[styles.tdMuted, styles.colRate]} />
         <Text
-          style={[
-            styles.tdText,
-            styles.colAmount,
-            {
-              fontWeight: "bold",
-              borderTopWidth: 0.5,
-              borderTopColor: B,
-            },
-          ]}
-        >
-          {fmt(subtotal)}
-        </Text>
+          style={[styles.tdMuted, styles.colHsn, { borderRightWidth: 0 }]}
+        />
+        <Text
+          style={[styles.tdMuted, styles.colQty, { borderRightWidth: 0 }]}
+        />
+        <Text
+          style={[styles.tdMuted, styles.colRate, { borderRightWidth: 0 }]}
+        />
+        <Text style={[styles.tdText, styles.colAmount]}>{fmt(subtotal)}</Text>
       </View>
 
       {/* Other charges */}
       {visibleOtherCharges.map((charge, idx) => (
         <View key={`charge-${idx}`} style={styles.tableRow}>
-          <Text style={[styles.tdMuted, styles.colSI]} />
+          <Text
+            style={[styles.tdMuted, styles.colSI, { borderRightWidth: 0 }]}
+          />
           <Text
             style={[
               styles.tdText,
               styles.colDesc,
-              { textAlign: "right", paddingRight: 8 },
+              { textAlign: "right", paddingRight: 8, borderRightWidth: 0 },
             ]}
           >
             {charge.description || "Other Charge"}
           </Text>
-          <Text style={[styles.tdMuted, styles.colHsn]} />
-          <Text style={[styles.tdMuted, styles.colQty]} />
-          <Text style={[styles.tdMuted, styles.colRate]} />
+          <Text
+            style={[styles.tdMuted, styles.colHsn, { borderRightWidth: 0 }]}
+          />
+          <Text
+            style={[styles.tdMuted, styles.colQty, { borderRightWidth: 0 }]}
+          />
+          <Text
+            style={[styles.tdMuted, styles.colRate, { borderRightWidth: 0 }]}
+          />
           <Text style={[styles.tdText, styles.colAmount]}>
             {fmt(charge.amount)}
           </Text>
@@ -676,7 +684,9 @@ function TableSummaryRows({
       {/* CGST */}
       {cgstRate > 0 && (
         <View style={styles.tableRow}>
-          <Text style={[styles.tdMuted, styles.colSI]} />
+          <Text
+            style={[styles.tdMuted, styles.colSI, { borderRightWidth: 0 }]}
+          />
           <Text
             style={[
               styles.tdText,
@@ -685,14 +695,21 @@ function TableSummaryRows({
                 textAlign: "right",
                 paddingRight: 8,
                 fontStyle: "italic",
+                borderRightWidth: 0,
               },
             ]}
           >
             CGST @ {cgstRate}%
           </Text>
-          <Text style={[styles.tdMuted, styles.colHsn]} />
-          <Text style={[styles.tdMuted, styles.colQty]} />
-          <Text style={[styles.tdMuted, styles.colRate]} />
+          <Text
+            style={[styles.tdMuted, styles.colHsn, { borderRightWidth: 0 }]}
+          />
+          <Text
+            style={[styles.tdMuted, styles.colQty, { borderRightWidth: 0 }]}
+          />
+          <Text
+            style={[styles.tdMuted, styles.colRate, { borderRightWidth: 0 }]}
+          />
           <Text style={[styles.tdText, styles.colAmount]}>{fmt(cgstAmt)}</Text>
         </View>
       )}
@@ -700,7 +717,9 @@ function TableSummaryRows({
       {/* SGST */}
       {sgstRate > 0 && (
         <View style={styles.tableRow}>
-          <Text style={[styles.tdMuted, styles.colSI]} />
+          <Text
+            style={[styles.tdMuted, styles.colSI, { borderRightWidth: 0 }]}
+          />
           <Text
             style={[
               styles.tdText,
@@ -709,14 +728,21 @@ function TableSummaryRows({
                 textAlign: "right",
                 paddingRight: 8,
                 fontStyle: "italic",
+                borderRightWidth: 0,
               },
             ]}
           >
             SGST @ {sgstRate}%
           </Text>
-          <Text style={[styles.tdMuted, styles.colHsn]} />
-          <Text style={[styles.tdMuted, styles.colQty]} />
-          <Text style={[styles.tdMuted, styles.colRate]} />
+          <Text
+            style={[styles.tdMuted, styles.colHsn, { borderRightWidth: 0 }]}
+          />
+          <Text
+            style={[styles.tdMuted, styles.colQty, { borderRightWidth: 0 }]}
+          />
+          <Text
+            style={[styles.tdMuted, styles.colRate, { borderRightWidth: 0 }]}
+          />
           <Text style={[styles.tdText, styles.colAmount]}>{fmt(sgstAmt)}</Text>
         </View>
       )}
@@ -724,7 +750,9 @@ function TableSummaryRows({
       {/* IGST */}
       {igstRate > 0 && (
         <View style={styles.tableRow}>
-          <Text style={[styles.tdMuted, styles.colSI]} />
+          <Text
+            style={[styles.tdMuted, styles.colSI, { borderRightWidth: 0 }]}
+          />
           <Text
             style={[
               styles.tdText,
@@ -733,14 +761,21 @@ function TableSummaryRows({
                 textAlign: "right",
                 paddingRight: 8,
                 fontStyle: "italic",
+                borderRightWidth: 0,
               },
             ]}
           >
             IGST @ {igstRate}%
           </Text>
-          <Text style={[styles.tdMuted, styles.colHsn]} />
-          <Text style={[styles.tdMuted, styles.colQty]} />
-          <Text style={[styles.tdMuted, styles.colRate]} />
+          <Text
+            style={[styles.tdMuted, styles.colHsn, { borderRightWidth: 0 }]}
+          />
+          <Text
+            style={[styles.tdMuted, styles.colQty, { borderRightWidth: 0 }]}
+          />
+          <Text
+            style={[styles.tdMuted, styles.colRate, { borderRightWidth: 0 }]}
+          />
           <Text style={[styles.tdText, styles.colAmount]}>{fmt(igstAmt)}</Text>
         </View>
       )}
@@ -748,7 +783,9 @@ function TableSummaryRows({
       {/* Rounded off */}
       {Math.abs(roundedOff) >= 0.005 && (
         <View style={styles.tableRowLast}>
-          <Text style={[styles.tdMuted, styles.colSI]} />
+          <Text
+            style={[styles.tdMuted, styles.colSI, { borderRightWidth: 0 }]}
+          />
           <Text
             style={[
               styles.tdText,
@@ -757,14 +794,21 @@ function TableSummaryRows({
                 textAlign: "right",
                 paddingRight: 8,
                 fontStyle: "italic",
+                borderRightWidth: 0,
               },
             ]}
           >
             Rounded Off
           </Text>
-          <Text style={[styles.tdMuted, styles.colHsn]} />
-          <Text style={[styles.tdMuted, styles.colQty]} />
-          <Text style={[styles.tdMuted, styles.colRate]} />
+          <Text
+            style={[styles.tdMuted, styles.colHsn, { borderRightWidth: 0 }]}
+          />
+          <Text
+            style={[styles.tdMuted, styles.colQty, { borderRightWidth: 0 }]}
+          />
+          <Text
+            style={[styles.tdMuted, styles.colRate, { borderRightWidth: 0 }]}
+          />
           <Text style={[styles.tdText, styles.colAmount]}>
             {fmt(roundedOff)}
           </Text>
@@ -787,8 +831,19 @@ function InvoiceFooterSections({
     <>
       {/* Grand total row — value only on last page */}
       <View style={styles.totalRow}>
-        <Text style={[styles.tdMuted, styles.colSI]} />
-        <Text style={[styles.totalLabel]}>Total</Text>
+        <Text style={[styles.tdMuted, styles.colSI, { borderRightWidth: 0 }]} />
+        <Text
+          style={[styles.colDesc, styles.totalLabel, { borderRightWidth: 0 }]}
+        >
+          Grand Total
+        </Text>
+        <Text
+          style={[styles.tdMuted, styles.colHsn, { borderRightWidth: 0 }]}
+        />
+        <Text
+          style={[styles.tdMuted, styles.colQty, { borderRightWidth: 0 }]}
+        />
+        <Text style={[styles.tdMuted, styles.colRate]} />
         <Text style={styles.totalValue}>
           {isLastPage ? `₹ ${fmt(grandTotal)}` : "—"}
         </Text>
@@ -978,7 +1033,8 @@ export function InvoicePDFDocument({
   // bodySpace = space available for the flowing rows (line items + summary rows).
   // footer sections (grand total, words, bank, declaration) are fixed on every page
   // and are already deducted here.
-  const bodySpace = PAGE_HEIGHT - chromeHeight - SAFETY_MARGIN - footerSectionsHeight
+  const bodySpace =
+    PAGE_HEIGHT - chromeHeight - SAFETY_MARGIN - footerSectionsHeight
   console.log("bodySpace", bodySpace)
 
   // ── Build a unified flat list of all rows that will flow/paginate together ──
@@ -1003,9 +1059,15 @@ export function InvoicePDFDocument({
       description: c.description,
       amount: c.amount,
     })),
-    ...(cgstRate > 0 ? [{ kind: "cgst" as const, rate: cgstRate, amount: cgstAmt }] : []),
-    ...(sgstRate > 0 ? [{ kind: "sgst" as const, rate: sgstRate, amount: sgstAmt }] : []),
-    ...(igstRate > 0 ? [{ kind: "igst" as const, rate: igstRate, amount: igstAmt }] : []),
+    ...(cgstRate > 0
+      ? [{ kind: "cgst" as const, rate: cgstRate, amount: cgstAmt }]
+      : []),
+    ...(sgstRate > 0
+      ? [{ kind: "sgst" as const, rate: sgstRate, amount: sgstAmt }]
+      : []),
+    ...(igstRate > 0
+      ? [{ kind: "igst" as const, rate: igstRate, amount: igstAmt }]
+      : []),
     ...(Math.abs(roundedOff) >= 0.005
       ? [{ kind: "roundedOff" as const, amount: roundedOff }]
       : []),
@@ -1104,9 +1166,10 @@ export function InvoicePDFDocument({
               <View style={{ flex: 1 }}>
                 <InvoiceTableHeader />
 
-                {/* All rows flow together: line items + summary rows */}
-                {chunk.map((row, idx) => {
-                  if (row.kind === "lineItem") {
+                {/* Line item rows */}
+                {chunk
+                  .filter((r) => r.kind === "lineItem")
+                  .map((row, idx) => {
                     const qty = parseFloat(row.item.quantity) || 0
                     const rate = parseFloat(row.item.rate) || 0
                     const amount = qty * rate
@@ -1132,156 +1195,9 @@ export function InvoicePDFDocument({
                         </Text>
                       </View>
                     )
-                  }
+                  })}
 
-                  if (row.kind === "subtotal") {
-                    return (
-                      <View key={idx} style={styles.tableRow}>
-                        <Text style={[styles.tdMuted, styles.colSI]} />
-                        <Text
-                          style={[
-                            styles.tdText,
-                            styles.colDesc,
-                            { textAlign: "right", paddingRight: 8, fontWeight: "bold" },
-                          ]}
-                        >
-                          Subtotal
-                        </Text>
-                        <Text style={[styles.tdMuted, styles.colHsn]} />
-                        <Text style={[styles.tdMuted, styles.colQty]} />
-                        <Text style={[styles.tdMuted, styles.colRate]} />
-                        <Text
-                          style={[
-                            styles.tdText,
-                            styles.colAmount,
-                            { fontWeight: "bold", borderTopWidth: 0.5, borderTopColor: B },
-                          ]}
-                        >
-                          {fmt(subtotal)}
-                        </Text>
-                      </View>
-                    )
-                  }
-
-                  if (row.kind === "otherCharge") {
-                    return (
-                      <View key={idx} style={styles.tableRow}>
-                        <Text style={[styles.tdMuted, styles.colSI]} />
-                        <Text
-                          style={[
-                            styles.tdText,
-                            styles.colDesc,
-                            { textAlign: "right", paddingRight: 8 },
-                          ]}
-                        >
-                          {row.description || "Other Charge"}
-                        </Text>
-                        <Text style={[styles.tdMuted, styles.colHsn]} />
-                        <Text style={[styles.tdMuted, styles.colQty]} />
-                        <Text style={[styles.tdMuted, styles.colRate]} />
-                        <Text style={[styles.tdText, styles.colAmount]}>
-                          {fmt(row.amount)}
-                        </Text>
-                      </View>
-                    )
-                  }
-
-                  if (row.kind === "cgst") {
-                    return (
-                      <View key={idx} style={styles.tableRow}>
-                        <Text style={[styles.tdMuted, styles.colSI]} />
-                        <Text
-                          style={[
-                            styles.tdText,
-                            styles.colDesc,
-                            { textAlign: "right", paddingRight: 8, fontStyle: "italic" },
-                          ]}
-                        >
-                          CGST @ {row.rate}%
-                        </Text>
-                        <Text style={[styles.tdMuted, styles.colHsn]} />
-                        <Text style={[styles.tdMuted, styles.colQty]} />
-                        <Text style={[styles.tdMuted, styles.colRate]} />
-                        <Text style={[styles.tdText, styles.colAmount]}>
-                          {fmt(row.amount)}
-                        </Text>
-                      </View>
-                    )
-                  }
-
-                  if (row.kind === "sgst") {
-                    return (
-                      <View key={idx} style={styles.tableRow}>
-                        <Text style={[styles.tdMuted, styles.colSI]} />
-                        <Text
-                          style={[
-                            styles.tdText,
-                            styles.colDesc,
-                            { textAlign: "right", paddingRight: 8, fontStyle: "italic" },
-                          ]}
-                        >
-                          SGST @ {row.rate}%
-                        </Text>
-                        <Text style={[styles.tdMuted, styles.colHsn]} />
-                        <Text style={[styles.tdMuted, styles.colQty]} />
-                        <Text style={[styles.tdMuted, styles.colRate]} />
-                        <Text style={[styles.tdText, styles.colAmount]}>
-                          {fmt(row.amount)}
-                        </Text>
-                      </View>
-                    )
-                  }
-
-                  if (row.kind === "igst") {
-                    return (
-                      <View key={idx} style={styles.tableRow}>
-                        <Text style={[styles.tdMuted, styles.colSI]} />
-                        <Text
-                          style={[
-                            styles.tdText,
-                            styles.colDesc,
-                            { textAlign: "right", paddingRight: 8, fontStyle: "italic" },
-                          ]}
-                        >
-                          IGST @ {row.rate}%
-                        </Text>
-                        <Text style={[styles.tdMuted, styles.colHsn]} />
-                        <Text style={[styles.tdMuted, styles.colQty]} />
-                        <Text style={[styles.tdMuted, styles.colRate]} />
-                        <Text style={[styles.tdText, styles.colAmount]}>
-                          {fmt(row.amount)}
-                        </Text>
-                      </View>
-                    )
-                  }
-
-                  if (row.kind === "roundedOff") {
-                    return (
-                      <View key={idx} style={styles.tableRowLast}>
-                        <Text style={[styles.tdMuted, styles.colSI]} />
-                        <Text
-                          style={[
-                            styles.tdText,
-                            styles.colDesc,
-                            { textAlign: "right", paddingRight: 8, fontStyle: "italic" },
-                          ]}
-                        >
-                          Rounded Off
-                        </Text>
-                        <Text style={[styles.tdMuted, styles.colHsn]} />
-                        <Text style={[styles.tdMuted, styles.colQty]} />
-                        <Text style={[styles.tdMuted, styles.colRate]} />
-                        <Text style={[styles.tdText, styles.colAmount]}>
-                          {fmt(row.amount)}
-                        </Text>
-                      </View>
-                    )
-                  }
-
-                  return null
-                })}
-
-                {/* Filler row — extends column lines through remaining space */}
+                {/* Filler row — pushes summary rows down and extends column lines */}
                 <View style={{ flexDirection: "row", flex: 1 }}>
                   <View style={styles.colSI} />
                   <View style={styles.colDesc} />
@@ -1290,6 +1206,287 @@ export function InvoicePDFDocument({
                   <View style={styles.colRate} />
                   <View style={styles.colAmount} />
                 </View>
+
+                {/* Summary rows (subtotal, taxes, etc.) — pinned to bottom */}
+                {chunk
+                  .filter((r) => r.kind !== "lineItem")
+                  .map((row, idx) => {
+                    if (row.kind === "subtotal") {
+                      return (
+                        <View key={idx} style={styles.tableRowDivider}>
+                          <Text
+                            style={[
+                              styles.tdMuted,
+                              styles.colSI,
+                              { borderRightWidth: 0 },
+                            ]}
+                          />
+                          <Text
+                            style={[
+                              styles.tdText,
+                              styles.colDesc,
+                              {
+                                textAlign: "right",
+                                paddingRight: 8,
+                                borderRightWidth: 0,
+                              },
+                            ]}
+                          >
+                            Subtotal
+                          </Text>
+                          <Text
+                            style={[
+                              styles.tdMuted,
+                              styles.colHsn,
+                              { borderRightWidth: 0 },
+                            ]}
+                          />
+                          <Text
+                            style={[
+                              styles.tdMuted,
+                              styles.colQty,
+                              { borderRightWidth: 0 },
+                            ]}
+                          />
+                          <Text style={[styles.tdMuted, styles.colRate]} />
+                          <Text style={[styles.tdText, styles.colAmount]}>
+                            {fmt(subtotal)}
+                          </Text>
+                        </View>
+                      )
+                    }
+
+                    if (row.kind === "otherCharge") {
+                      return (
+                        <View key={idx} style={styles.tableRow}>
+                          <Text
+                            style={[
+                              styles.tdMuted,
+                              styles.colSI,
+                              { borderRightWidth: 0 },
+                            ]}
+                          />
+                          <Text
+                            style={[
+                              styles.tdText,
+                              styles.colDesc,
+                              {
+                                textAlign: "right",
+                                paddingRight: 8,
+                                borderRightWidth: 0,
+                              },
+                            ]}
+                          >
+                            {row.description || "Other Charge"}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.tdMuted,
+                              styles.colHsn,
+                              { borderRightWidth: 0 },
+                            ]}
+                          />
+                          <Text
+                            style={[
+                              styles.tdMuted,
+                              styles.colQty,
+                              { borderRightWidth: 0 },
+                            ]}
+                          />
+                          <Text style={[styles.tdMuted, styles.colRate]} />
+                          <Text style={[styles.tdText, styles.colAmount]}>
+                            {fmt(row.amount)}
+                          </Text>
+                        </View>
+                      )
+                    }
+
+                    if (row.kind === "cgst") {
+                      return (
+                        <View key={idx} style={styles.tableRow}>
+                          <Text
+                            style={[
+                              styles.tdMuted,
+                              styles.colSI,
+                              { borderRightWidth: 0 },
+                            ]}
+                          />
+                          <Text
+                            style={[
+                              styles.tdText,
+                              styles.colDesc,
+                              {
+                                textAlign: "right",
+                                paddingRight: 8,
+                                fontStyle: "italic",
+                                borderRightWidth: 0,
+                              },
+                            ]}
+                          >
+                            CGST @ {row.rate}%
+                          </Text>
+                          <Text
+                            style={[
+                              styles.tdMuted,
+                              styles.colHsn,
+                              { borderRightWidth: 0 },
+                            ]}
+                          />
+                          <Text
+                            style={[
+                              styles.tdMuted,
+                              styles.colQty,
+                              { borderRightWidth: 0 },
+                            ]}
+                          />
+                          <Text style={[styles.tdMuted, styles.colRate]} />
+                          <Text style={[styles.tdText, styles.colAmount]}>
+                            {fmt(row.amount)}
+                          </Text>
+                        </View>
+                      )
+                    }
+
+                    if (row.kind === "sgst") {
+                      return (
+                        <View key={idx} style={styles.tableRow}>
+                          <Text
+                            style={[
+                              styles.tdMuted,
+                              styles.colSI,
+                              { borderRightWidth: 0 },
+                            ]}
+                          />
+                          <Text
+                            style={[
+                              styles.tdText,
+                              styles.colDesc,
+                              {
+                                textAlign: "right",
+                                paddingRight: 8,
+                                fontStyle: "italic",
+                                borderRightWidth: 0,
+                              },
+                            ]}
+                          >
+                            SGST @ {row.rate}%
+                          </Text>
+                          <Text
+                            style={[
+                              styles.tdMuted,
+                              styles.colHsn,
+                              { borderRightWidth: 0 },
+                            ]}
+                          />
+                          <Text
+                            style={[
+                              styles.tdMuted,
+                              styles.colQty,
+                              { borderRightWidth: 0 },
+                            ]}
+                          />
+                          <Text style={[styles.tdMuted, styles.colRate]} />
+                          <Text style={[styles.tdText, styles.colAmount]}>
+                            {fmt(row.amount)}
+                          </Text>
+                        </View>
+                      )
+                    }
+
+                    if (row.kind === "igst") {
+                      return (
+                        <View key={idx} style={styles.tableRow}>
+                          <Text
+                            style={[
+                              styles.tdMuted,
+                              styles.colSI,
+                              { borderRightWidth: 0 },
+                            ]}
+                          />
+                          <Text
+                            style={[
+                              styles.tdText,
+                              styles.colDesc,
+                              {
+                                textAlign: "right",
+                                paddingRight: 8,
+                                fontStyle: "italic",
+                                borderRightWidth: 0,
+                              },
+                            ]}
+                          >
+                            IGST @ {row.rate}%
+                          </Text>
+                          <Text
+                            style={[
+                              styles.tdMuted,
+                              styles.colHsn,
+                              { borderRightWidth: 0 },
+                            ]}
+                          />
+                          <Text
+                            style={[
+                              styles.tdMuted,
+                              styles.colQty,
+                              { borderRightWidth: 0 },
+                            ]}
+                          />
+                          <Text style={[styles.tdMuted, styles.colRate]} />
+                          <Text style={[styles.tdText, styles.colAmount]}>
+                            {fmt(row.amount)}
+                          </Text>
+                        </View>
+                      )
+                    }
+
+                    if (row.kind === "roundedOff") {
+                      return (
+                        <View key={idx} style={styles.tableRowLast}>
+                          <Text
+                            style={[
+                              styles.tdMuted,
+                              styles.colSI,
+                              { borderRightWidth: 0 },
+                            ]}
+                          />
+                          <Text
+                            style={[
+                              styles.tdText,
+                              styles.colDesc,
+                              {
+                                textAlign: "right",
+                                paddingRight: 8,
+                                fontStyle: "italic",
+                                borderRightWidth: 0,
+                              },
+                            ]}
+                          >
+                            Rounded Off
+                          </Text>
+                          <Text
+                            style={[
+                              styles.tdMuted,
+                              styles.colHsn,
+                              { borderRightWidth: 0 },
+                            ]}
+                          />
+                          <Text
+                            style={[
+                              styles.tdMuted,
+                              styles.colQty,
+                              { borderRightWidth: 0 },
+                            ]}
+                          />
+                          <Text style={[styles.tdMuted, styles.colRate]} />
+                          <Text style={[styles.tdText, styles.colAmount]}>
+                            {fmt(row.amount)}
+                          </Text>
+                        </View>
+                      )
+                    }
+
+                    return null
+                  })}
               </View>
               {/* end table wrapper */}
 
