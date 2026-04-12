@@ -80,36 +80,29 @@ export function getDb(): Database.Database {
   return _db
 }
 
-function ensureColumn(
-  db: Database.Database,
-  table: string,
-  columnName: string,
-  columnDefinition: string
-) {
-  const columns = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>
-  if (!columns.some((column) => column.name === columnName)) {
-    db.exec(`ALTER TABLE ${table} ADD COLUMN ${columnDefinition}`)
-  }
-}
 
 function migrate(db: Database.Database) {
   const version = db.pragma("user_version", { simple: true }) as number
 
-  if (version < 1) {
+  if (version < 2) {
     db.exec(`
       CREATE TABLE IF NOT EXISTS companies (
-        id              TEXT PRIMARY KEY,
-        name            TEXT NOT NULL,
-        email_primary   TEXT NOT NULL,
-        email_secondary TEXT,
-        phone_primary   TEXT NOT NULL,
-        phone_secondary TEXT,
-        phone_landline  TEXT,
-        website         TEXT,
-        pan             TEXT NOT NULL,
-        gstin           TEXT NOT NULL,
-        address         TEXT NOT NULL,
-        state           TEXT NOT NULL
+        id                   TEXT PRIMARY KEY,
+        name                 TEXT NOT NULL,
+        email_primary        TEXT NOT NULL,
+        email_secondary      TEXT,
+        phone_primary        TEXT NOT NULL,
+        phone_secondary      TEXT,
+        phone_landline       TEXT,
+        website              TEXT,
+        pan                  TEXT NOT NULL,
+        gstin                TEXT NOT NULL,
+        address              TEXT NOT NULL,
+        state                TEXT NOT NULL,
+        bank_name            TEXT,
+        bank_account_number  TEXT,
+        bank_branch          TEXT,
+        bank_ifsc            TEXT
       );
       CREATE TABLE IF NOT EXISTS clients (
         id              TEXT PRIMARY KEY,
@@ -140,66 +133,6 @@ function migrate(db: Database.Database) {
       );
     `)
 
-    ensureColumn(db, "invoices", "transport_mode", "transport_mode TEXT")
-    ensureColumn(db, "invoices", "vehicle_number", "vehicle_number TEXT")
-    ensureColumn(db, "companies", "bank_name", "bank_name TEXT")
-    ensureColumn(db, "companies", "bank_account_number", "bank_account_number TEXT")
-    ensureColumn(db, "companies", "bank_branch", "bank_branch TEXT")
-    ensureColumn(db, "companies", "bank_ifsc", "bank_ifsc TEXT")
-
-    db.exec(`
-      PRAGMA foreign_keys = OFF;
-      CREATE TABLE invoices_new (
-        id                  TEXT PRIMARY KEY,
-        company_id          TEXT NOT NULL REFERENCES companies(id),
-        bill_to             TEXT NOT NULL,
-        ship_to             TEXT NOT NULL,
-        ship_same_as_bill   INTEGER NOT NULL DEFAULT 1,
-        invoice_number      TEXT NOT NULL,
-        invoice_date        TEXT NOT NULL,
-        transport_mode      TEXT,
-        vehicle_number      TEXT,
-        billed_items        TEXT NOT NULL,
-        created_at          TEXT DEFAULT CURRENT_TIMESTAMP,
-        updated_at          TEXT DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(company_id, invoice_number)
-      );
-      INSERT INTO invoices_new SELECT * FROM invoices;
-      DROP TABLE invoices;
-      ALTER TABLE invoices_new RENAME TO invoices;
-      PRAGMA foreign_keys = ON;
-    `)
-
-    db.pragma("user_version = 1")
-  }
-
-  if (version < 2) {
-    // Fix: ensure invoices table has composite UNIQUE(company_id, invoice_number)
-    // not a single-column unique on invoice_number alone.
-    db.exec(`
-      PRAGMA foreign_keys = OFF;
-    `)
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS invoices_v2 (
-        id                  TEXT PRIMARY KEY,
-        company_id          TEXT NOT NULL REFERENCES companies(id),
-        bill_to             TEXT NOT NULL,
-        ship_to             TEXT NOT NULL,
-        ship_same_as_bill   INTEGER NOT NULL DEFAULT 1,
-        invoice_number      TEXT NOT NULL,
-        invoice_date        TEXT NOT NULL,
-        transport_mode      TEXT,
-        vehicle_number      TEXT,
-        billed_items        TEXT NOT NULL,
-        created_at          TEXT DEFAULT CURRENT_TIMESTAMP,
-        updated_at          TEXT DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(company_id, invoice_number)
-      );
-    `)
-    db.exec(`INSERT INTO invoices_v2 SELECT * FROM invoices;`)
-    db.exec(`DROP TABLE invoices;`)
-    db.exec(`ALTER TABLE invoices_v2 RENAME TO invoices;`)
-    db.exec(`PRAGMA foreign_keys = ON;`)
     db.pragma("user_version = 2")
   }
 }
